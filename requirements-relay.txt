@@ -1,0 +1,5 @@
+# Minimal relay runtime for P1 entry and local development.
+# Install with:
+#   python -m pip install -r requirements-relay.txt
+fastapi
+uvicorn
