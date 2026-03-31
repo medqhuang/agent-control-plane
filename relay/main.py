@@ -11,9 +11,13 @@ from fastapi import HTTPException
 from pydantic import BaseModel
 
 from relay.approval_store import apply_decision
+from relay.approval_store import get_approval
+from relay.approval_store import get_status_for_decision
+from relay.approval_store import is_terminal_status
 from relay.approval_store import list_approvals
 from relay.event_log import append_approval_response_event
 from relay.session_store import list_sessions
+from relay.session_store import sync_session_status_from_approval
 
 
 app = FastAPI(
@@ -41,10 +45,38 @@ def get_snapshot() -> dict[str, list[dict[str, str]]]:
 @app.post("/v1/approval-response")
 def post_approval_response(
     payload: ApprovalResponseRequest,
-) -> dict[str, dict[str, str | int]]:
-    approval = apply_decision(payload.request_id, payload.decision)
+) -> dict[str, object]:
+    approval = get_approval(payload.request_id)
     if approval is None:
         raise HTTPException(status_code=404, detail="approval request not found")
+
+    target_status = get_status_for_decision(payload.decision)
+    if is_terminal_status(approval["status"]):
+        if approval["status"] == target_status:
+            return {
+                "approval": approval,
+                "event": None,
+                "idempotent": True,
+                "message": "decision already applied",
+            }
+
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": "approval request already finalized with a different decision",
+                "request_id": approval["request_id"],
+                "current_status": approval["status"],
+                "attempted_decision": payload.decision,
+            },
+        )
+
+    approval = apply_decision(payload.request_id, payload.decision)
+    session = sync_session_status_from_approval(
+        session_id=approval["session_id"],
+        approval_status=approval["status"],
+    )
+    if session is None:
+        raise HTTPException(status_code=404, detail="session not found")
 
     event = append_approval_response_event(
         request_id=approval["request_id"],
@@ -55,4 +87,5 @@ def post_approval_response(
     return {
         "approval": approval,
         "event": event,
+        "idempotent": False,
     }
