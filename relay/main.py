@@ -6,22 +6,24 @@ stores, and provider-facing integration points.
 
 from typing import Literal
 
-from adapters.kimi import write_approval_response_to_kimi
 from fastapi import FastAPI
 from fastapi import HTTPException
 from pydantic import BaseModel
+from pydantic import Field
 
 from relay.approval_store import apply_decision
 from relay.approval_store import get_approval
 from relay.approval_store import get_status_for_decision
 from relay.approval_store import is_terminal_status
 from relay.approval_store import list_approvals
+from relay.approval_store import upsert_pending_approval_from_remote_event
 from relay.approval_store import upsert_pending_approval_request
 from relay.event_log import append_approval_response_event
 from relay.event_log import get_next_event_seq
 from relay.session_store import get_session
 from relay.session_store import list_sessions
 from relay.session_store import sync_session_status_from_approval
+from relay.session_store import upsert_session_from_remote_event
 from relay.session_store import upsert_session_from_approval_request
 
 
@@ -52,11 +54,50 @@ class KimiApprovalRequestEvent(BaseModel):
     summary: str
 
 
+class RemoteAgentStandardEvent(BaseModel):
+    type: Literal[
+        "session_started",
+        "session_continued",
+        "approval_request_observed",
+        "session_finished",
+    ]
+    provider: str
+    session_id: str
+    seq: int
+    at: str
+    remote: str
+    title: str
+    payload: dict[str, object] = Field(default_factory=dict)
+
+
 @app.get("/v1/snapshot")
-def get_snapshot() -> dict[str, list[dict[str, str]]]:
+def get_snapshot() -> dict[str, list[dict[str, object]]]:
     return {
         "sessions": list_sessions(),
         "approvals": list_approvals(),
+    }
+
+
+@app.post("/v1/remote-agent/events")
+def post_remote_agent_event(
+    payload: RemoteAgentStandardEvent,
+) -> dict[str, object]:
+    normalized_event = payload.model_dump()
+    session, session_applied = upsert_session_from_remote_event(normalized_event)
+    approval = None
+    approval_applied = False
+    if normalized_event["type"] == "approval_request_observed":
+        approval, approval_applied = upsert_pending_approval_from_remote_event(
+            normalized_event
+        )
+
+    return {
+        "session": session,
+        "approval": approval,
+        "event": normalized_event,
+        "applied": session_applied or approval_applied,
+        "session_applied": session_applied,
+        "approval_applied": approval_applied,
     }
 
 
@@ -112,6 +153,8 @@ def post_approval_response(
 
     event_seq = get_next_event_seq()
     try:
+        from adapters.kimi import write_approval_response_to_kimi
+
         provider_writeback = write_approval_response_to_kimi(
             session_id=approval["session_id"],
             request_id=approval["request_id"],

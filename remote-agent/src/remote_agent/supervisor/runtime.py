@@ -1,4 +1,4 @@
-"""Placeholder supervisor runtime for the remote-agent foundation."""
+"""Minimal supervisor runtime for the remote-agent foundation."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from dataclasses import field
 
 from remote_agent import __version__
-from remote_agent.providers.kimi.worker import build_kimi_start_result
+from remote_agent.providers.kimi.worker import start_kimi_task
 from remote_agent.relay.client import RelayReporter
 
 
@@ -19,15 +19,15 @@ class SupervisorRuntime:
             "service": "remote-agent",
             "version": __version__,
             "supervisor": {
-                "status": "placeholder",
+                "status": "minimal",
                 "entrypoint": "remote_agent.supervisor.runtime:SupervisorRuntime",
                 "responsibility": "session lifecycle and provider worker orchestration",
             },
             "providers": {
                 "kimi": {
-                    "status": "enabled_placeholder",
-                    "transport": "planned:kimi --wire",
-                    "worker_entrypoint": "remote_agent.providers.kimi.worker:build_kimi_start_result",
+                    "status": "enabled",
+                    "transport": "kimi --wire",
+                    "worker_entrypoint": "remote_agent.providers.kimi.worker:start_kimi_task",
                 }
             },
             "relay": self.relay_reporter.describe(),
@@ -49,8 +49,18 @@ class SupervisorRuntime:
             },
         }
 
-    def start_kimi_task(self, *, task: str) -> dict[str, object]:
-        return build_kimi_start_result(
+    def start_kimi_task(
+        self,
+        *,
+        task: str,
+        workdir: str | None = None,
+        timeout_seconds: int = 90,
+        kimi_bin: str | None = None,
+    ) -> dict[str, object]:
+        return start_kimi_task(
             task=task,
+            workdir=workdir,
+            timeout_seconds=timeout_seconds,
+            kimi_bin=kimi_bin,
             relay_reporter=self.relay_reporter,
         )

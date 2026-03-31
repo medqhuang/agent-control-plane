@@ -91,6 +91,28 @@ if ! command -v systemctl >/dev/null 2>&1; then
   exit 1
 fi
 
+ensure_linger() {
+  local current_linger
+  current_linger="$(loginctl show-user "${USER}" -p Linger --value 2>/dev/null || true)"
+  if [[ "${current_linger}" == "yes" ]]; then
+    return 0
+  fi
+
+  if loginctl enable-linger "${USER}" >/dev/null 2>&1; then
+    current_linger="$(loginctl show-user "${USER}" -p Linger --value 2>/dev/null || true)"
+  fi
+
+  if [[ "${current_linger}" != "yes" ]]; then
+    echo "failed to ensure linger=yes for user ${USER}" >&2
+    echo "run one of the following on the target host:" >&2
+    echo "  loginctl enable-linger ${USER}" >&2
+    echo "  sudo loginctl enable-linger ${USER}" >&2
+    exit 1
+  fi
+}
+
+ensure_linger
+
 if ! systemctl --user is-system-running >/dev/null 2>&1; then
   echo "systemctl --user is not available for the current user session" >&2
   exit 1

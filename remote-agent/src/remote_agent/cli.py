@@ -51,12 +51,28 @@ def build_parser() -> argparse.ArgumentParser:
 
     kimi_start_parser = kimi_subparsers.add_parser(
         "start",
-        help="start a placeholder Kimi task",
+        help="start a Kimi task via kimi --wire",
     )
     kimi_start_parser.add_argument(
         "--task",
         required=True,
         help="task text for the future Kimi worker",
+    )
+    kimi_start_parser.add_argument(
+        "--workdir",
+        default=None,
+        help="working directory for kimi --wire; defaults to the current directory",
+    )
+    kimi_start_parser.add_argument(
+        "--timeout-seconds",
+        default=_get_env_int("REMOTE_AGENT_KIMI_TIMEOUT_SECONDS", 90),
+        type=int,
+        help="maximum time to wait for a finish or approval event",
+    )
+    kimi_start_parser.add_argument(
+        "--kimi-bin",
+        default=os.environ.get("KIMI_BIN"),
+        help="override the kimi executable path",
     )
     kimi_start_parser.set_defaults(handler=_handle_kimi_start)
     return parser
@@ -100,7 +116,14 @@ def _handle_serve(args: argparse.Namespace) -> int:
 
 def _handle_kimi_start(args: argparse.Namespace) -> int:
     runtime = SupervisorRuntime()
-    print_json(runtime.start_kimi_task(task=args.task))
+    print_json(
+        runtime.start_kimi_task(
+            task=args.task,
+            workdir=args.workdir,
+            timeout_seconds=args.timeout_seconds,
+            kimi_bin=args.kimi_bin,
+        )
+    )
     return 0
 
 
