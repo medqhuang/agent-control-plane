@@ -1,0 +1,71 @@
+Metadata-Version: 2.4
+Name: remote-agent
+Version: 0.1.0
+Summary: Minimal remote-agent foundation for Agent Control Plane
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi
+Requires-Dist: uvicorn
+
+# remote-agent
+
+`remote-agent` is the minimal P4 foundation for remote native execution.
+
+This package intentionally does only two things right now:
+
+- start a minimal remote-agent HTTP service with `remote-agent serve`
+- accept a placeholder Kimi task with `remote-agent kimi start --task "..."`
+
+It does not yet integrate relay, `kimi --wire`, `systemctl --user`, or multi-remote orchestration.
+
+## Fixed Minimal Stack
+
+- Python package with `setuptools`
+- CLI with Python stdlib `argparse`
+- HTTP service with `FastAPI`
+- ASGI runtime with `uvicorn`
+
+## Install
+
+```bash
+python -m pip install -e ./remote-agent
+```
+
+## Commands
+
+```bash
+remote-agent serve
+remote-agent kimi start --task "refactor auth module"
+```
+
+## Directory Layout
+
+```text
+remote-agent/
+├── README.md
+├── pyproject.toml
+└── src/
+    └── remote_agent/
+        ├── __init__.py
+        ├── __main__.py
+        ├── app.py
+        ├── cli.py
+        ├── output.py
+        ├── providers/
+        │   ├── __init__.py
+        │   └── kimi/
+        │       ├── __init__.py
+        │       └── worker.py
+        ├── relay/
+        │   ├── __init__.py
+        │   └── client.py
+        └── supervisor/
+            ├── __init__.py
+            └── runtime.py
+```
+
+## Future Drop Points
+
+- `remote_agent.supervisor.runtime`: remote session lifecycle and worker orchestration
+- `remote_agent.providers.kimi.worker`: real `kimi --wire` execution
+- `remote_agent.relay.client`: relay status and approval reporting

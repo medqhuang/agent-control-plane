@@ -104,6 +104,23 @@ flowchart LR
 - `remote-agent` 负责远端 session 生命周期、provider 原生接入和 approval writeback
 - provider 相关的脆弱细节应尽量留在远端，而不是留在本地主链路
 
+新增的架构方向已经确定：
+
+- 本地控制端不是远端 session 的生存依赖
+- 远端 `remote-agent` 必须作为 session 的真实运行宿主
+- 本地程序关闭后，远端托管 session 应继续运行
+- 本地程序重新打开后，应能够重新连接并恢复当前 session 与 pending approvals 的视图
+
+这条能力当前还不是已完成能力，但已经确定为后续阶段的正式目标。
+
+关于远端 `remote-agent` 被杀后的恢复边界，也已经明确：
+
+- 目标是让 `remote-agent` 作为用户态服务被重新拉起
+- 控制平面状态应能够恢复，包括 active sessions、pending approvals 与最后已知状态
+- provider 运行时是否能从原执行现场继续，取决于 provider 是否支持 resume / reattach
+
+项目后续不会把“服务可复活”与“agent 执行现场一定能完整恢复”混为一谈。
+
 ## Current Implementation
 
 当前已经落地的核心能力包括：
@@ -139,6 +156,12 @@ flowchart LR
 - 该链路已足以证明产品方向和审批闭环，但不应表述为生产级原生集成
 
 `P4` 的主要工作，就是把这条旧 bridge 从主使用路径中移除。
+
+当前恢复能力也仍有限：
+
+- `remote-agent` 的自动复活与重连恢复尚未完成
+- 控制平面状态恢复与 provider 运行时恢复仍未正式落地
+- 后续只会把“可恢复控制面”作为明确目标；provider 原始执行现场恢复仍按各 provider 能力分别处理
 
 ## Platform Strategy
 
@@ -190,6 +213,12 @@ flowchart LR
 `V2`
 
 - `Claude Code Support`
+
+其中：
+
+- `P4` 负责把远端执行边界迁到 `remote-agent`
+- `P8` 负责把“本地可关闭、远端持续运行、后续可重连恢复”做成稳定能力
+- `P8` 也负责把“服务复活、状态重建、恢复边界说明”做成正式能力与正式文档
 
 ## Repository Layout
 

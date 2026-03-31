@@ -28,6 +28,10 @@
 - session 事件必须带顺序信息
 - 超时只能 `reject` 或 `expire`
 - 核心层不能写死 Windows 路径、PowerShell、Windows/macOS 平台 API
+- 本地控制端不是远端 session 的生存依赖
+- 远端 `remote-agent` 必须作为托管 session 的真实运行宿主
+- 本地控制端关闭后，远端 session 应继续运行；本地恢复后应支持重新连接
+- `remote-agent` 被杀后应优先保证“服务复活 + 控制面状态恢复”，而不是笼统承诺 provider 执行现场完整恢复
 
 ## 当前阶段
 
@@ -128,6 +132,7 @@ provider 原生接入策略固定为：
 - 先只支持 `Kimi`
 - 远端部署优先使用 `systemctl --user`
 - 用户交互优先采用“远端命令行启动 + 本地审批”模式
+- 从设计上确保远端 session 不依赖本地控制端进程存活
 
 目标使用方式：
 
@@ -167,6 +172,15 @@ remote-agent kimi start --task "重构 auth 模块"
 - relay 能看到新 session 和 pending approval
 - 本地审批后远端 session 能继续执行
 - 本地主链路不再依赖 `WSL -> SSH -> tmux -> TUI`
+
+### P4 方向性要求
+
+`P4` 需要先把语义定死，但不要求一次完成全部恢复能力：
+
+- 远端 session 的生命周期不能绑定到本地控制端
+- `remote-agent` 需要成为远端 session 的真实宿主
+- 后续重连恢复将作为 `P8` 的正式收口项
+- `remote-agent` 被杀后的恢复语义必须先写清楚：优先恢复服务与控制面，再按 provider 能力决定是否支持 resume / reattach
 
 ## P5 Multi-Remote
 
@@ -237,12 +251,20 @@ remote-agent kimi start --task "重构 auth 模块"
 - 更清晰的日志
 - 最小持久化
 - remote-agent 重启恢复
+- 本地控制端关闭后的重连恢复
+- 重新枚举 active sessions 与 pending approvals
+- 明确区分：
+  - 控制平面状态恢复
+  - provider session 重新接管
+  - provider 原始执行现场恢复
 
 ### 完成标准
 
 - 远端 agent 重启后状态不乱
 - 重复审批无副作用
 - 断线不会错误放行
+- 本地控制端关闭后重新打开，仍可恢复远端 active sessions 与 pending approvals 视图
+- 文档与实现都明确说明：服务可复活不等于 provider 执行现场一定完整恢复
 
 ## V2 Claude Code Support
 

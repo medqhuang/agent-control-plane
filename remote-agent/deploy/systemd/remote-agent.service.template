@@ -1,0 +1,17 @@
+[Unit]
+Description=Agent Control Plane Remote Agent
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=__REMOTE_AGENT_WORKDIR__
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=__REMOTE_AGENT_ENV_FILE__
+ExecStart=/bin/bash -lc 'mkdir -p "$(dirname "$REMOTE_AGENT_LOG_FILE")"; exec "$0" -m remote_agent serve --host "$REMOTE_AGENT_HOST" --port "$REMOTE_AGENT_PORT" --log-level "$REMOTE_AGENT_LOG_LEVEL" >> "$REMOTE_AGENT_LOG_FILE" 2>&1' __REMOTE_AGENT_PYTHON_BIN__
+Restart=always
+RestartSec=2
+SyslogIdentifier=remote-agent
+
+[Install]
+WantedBy=default.target
