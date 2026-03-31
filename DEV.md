@@ -44,8 +44,8 @@ Kimi / Claude / Codex CLI
 - `已完成`：`P1.5` Relay 收口
 - `已完成`：`P2` Kimi 闭环
 - `已完成`：`P2.5` Kimi bridge 收口
-- `当前`：`P3` 本地控制端 MVP
-- `后续`：`P4` Multi-Remote
+- `已完成`：`P3` 本地控制端 MVP
+- `当前`：`P4` Multi-Remote
 - `后续`：`P5` 跨平台清理
 - `后续`：`P6` Claude Support
 - `后续`：`P7` Codex Experimental
@@ -53,7 +53,7 @@ Kimi / Claude / Codex CLI
 
 ## 当前基线
 
-进入 `P3` 前，relay 与 Kimi bridge 已具备下面这些稳定基线：
+进入 `P4` 前，relay 与 Kimi bridge 已具备下面这些稳定基线：
 
 - `GET /v1/snapshot`
 - `POST /v1/approval-response`
@@ -65,13 +65,25 @@ Kimi / Claude / Codex CLI
 - Kimi 最小真实远端 approval 闭环
 - remote-backed 失败 / 超时不污染本地状态
 
-进入 `P3` 时默认冻结以下规则，不要顺手重构：
+进入 `P4` 前，本地控制端单 relay MVP 也已具备下面这些稳定基线：
+
+- `desktop/` 最小可启动骨架
+- `Electron + Node.js + 原生 HTML/CSS/JS` 最小桌面栈
+- 单 relay `snapshot` 读取
+- session 列表
+- pending approvals 列表
+- `approve / reject` 提交到 relay
+- relay 连接状态展示
+
+进入 `P4` 时默认冻结以下规则，不要顺手重构：
 
 - `approved -> session=running`
 - 相同决策重复提交：返回成功，但不重复写事件
 - 冲突决策重复提交：返回 `409`
 - relay 仍然是状态真源
 - 先 remote writeback 成功，再提交本地状态
+- 本地控制端当前先保持单 relay
+- 本地控制端当前先保持最小 Electron 壳，不扩成大前端框架
 
 当前 bridge 限制也一并冻结认知：
 
@@ -244,7 +256,7 @@ agent 分配建议：
 - 不看 SSH 终端，也能完成一次完整审批
 
 当前状态：
-- `当前阶段`
+- `已完成`
 
 ## P4 Multi-Remote
 
@@ -270,6 +282,9 @@ agent 分配建议：
 
 完成标准：
 - 两台远程服务器可同时显示在一个本地界面中
+
+当前状态：
+- `当前阶段`
 
 ## P5 跨平台清理
 
@@ -458,6 +473,14 @@ python -m uvicorn relay.main:app --reload
 Invoke-WebRequest http://127.0.0.1:8000/v1/snapshot
 ```
 
+### 运行 desktop
+
+```powershell
+cd C:\Users\dqhua\Desktop\agent-control-plane\desktop
+npm install
+npm start
+```
+
 ### 查看项目文件
 
 ```powershell
@@ -473,4 +496,4 @@ git diff
 
 一句话收尾：
 
-`P0-P2.5` 已完成，当前只推进 `P3 本地控制端 MVP`，不要顺手回退 bridge 规则。
+`P0-P3` 已完成，当前推进 `P4 Multi-Remote`，不要顺手回退单 relay MVP 和 bridge 规则。

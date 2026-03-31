@@ -17,10 +17,9 @@ const elements = {
 };
 
 const statusLabels = {
-  idle: "Idle",
-  loading: "Connecting",
-  refreshing: "Refreshing",
-  ready: "Connected",
+  loading: "Loading",
+  connected: "Connected",
+  disconnected: "Disconnected",
   error: "Error",
 };
 
@@ -53,9 +52,7 @@ function renderApp(state) {
   elements.sessionCount.textContent = String(sessions.length);
   elements.approvalCount.textContent = String(pendingApprovals.length);
   elements.refreshButton.disabled =
-    state.status === "loading" ||
-    state.status === "refreshing" ||
-    hasApprovalAction;
+    state.status === "loading" || hasApprovalAction;
 
   updateStatusBadge(state.status);
   renderSessionList(elements.sessionList, sessions);

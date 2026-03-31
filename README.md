@@ -6,7 +6,7 @@
 
 ## Status
 
-当前状态：`P0`、`P1`、`P1.5`、`P2`、`P2.5` 已完成，准备进入 `P3 本地控制端 MVP`。
+当前状态：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3` 已完成，准备进入 `P4 Multi-Remote`。
 
 已完成：
 - `P0` 项目初始化
@@ -14,11 +14,12 @@
 - `P1.5` Relay 收口
 - `P2` Kimi 闭环
 - `P2.5` Kimi bridge 收口与远端复核
+- `P3` 本地控制端 MVP
 
 当前优先级：
-- 实现本地控制端 MVP
-- 在本地界面里展示 session 与 pending approvals
-- 保持现有 relay 与 Kimi bridge 规则不回退
+- 推进 `P4 Multi-Remote`
+- 在本地界面里聚合多个 relay snapshot
+- 保持现有 `P3` 单 relay MVP 与 Kimi bridge 规则不回退
 
 ## 项目定位
 
@@ -77,6 +78,15 @@
 - 已复核远端 `approve` 路径
 - 已复核远端 `reject` 路径
 - 已验证 remote-backed 失败 / 超时路径不会污染本地状态
+
+当前本地控制端基线能力：
+- `desktop/` 下已有最小可启动本地控制应用
+- 当前桌面端最小技术栈为 `Electron + Node.js + 原生 HTML/CSS/JS`
+- 已接通单 relay `GET /v1/snapshot`
+- 已实现 session 列表
+- 已实现 pending approvals 列表
+- 已实现本地 `approve / reject` 到 relay `POST /v1/approval-response`
+- 已实现单 relay 连接状态展示
 
 ## 当前集成状态
 
@@ -167,12 +177,12 @@ flowchart LR
 - `P1.5` Relay 收口
 - `P2` Kimi 闭环
 - `P2.5` Kimi bridge 收口与远端复核
-
-`当前`
 - `P3` 本地控制端 MVP
 
-`后续`
+`当前`
 - `P4` Multi-Remote
+
+`后续`
 - `P5` 跨平台清理
 - `P6` Claude Support
 - `P7` Codex Experimental
@@ -186,6 +196,9 @@ agent-control-plane/
 ├── DEV.md
 ├── P0_worklog.md
 ├── P1_worklog.md
+├── P2_worklog.md
+├── P2.5_worklog.md
+├── P3_worklog.md
 ├── logs/
 │   └── 2026-03-31.md
 ├── relay/
@@ -203,6 +216,9 @@ agent-control-plane/
 - `DEV.md`
 - `P0_worklog.md`
 - `P1_worklog.md`
+- `P2_worklog.md`
+- `P2.5_worklog.md`
+- `P3_worklog.md`
 - `logs/当天日期.md`
 
 其中：

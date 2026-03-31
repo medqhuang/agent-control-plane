@@ -17,13 +17,29 @@ function normalizeSnapshot(snapshot) {
   };
 }
 
+function getConnectionStatusForRefreshError(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  const normalizedMessage = message.toLowerCase();
+
+  if (
+    normalizedMessage.includes("fetch failed") ||
+    normalizedMessage.includes("timed out") ||
+    normalizedMessage.includes("refused") ||
+    normalizedMessage.includes("network")
+  ) {
+    return "disconnected";
+  }
+
+  return "error";
+}
+
 export function createSnapshotStore() {
   const listeners = new Set();
   let refreshPromise = null;
   let state = {
     relayBaseUrl: "",
     snapshot: EMPTY_SNAPSHOT,
-    status: "idle",
+    status: "loading",
     error: null,
     lastUpdated: null,
     approvalActionByRequestId: {},
@@ -56,9 +72,8 @@ export function createSnapshotStore() {
       return refreshPromise;
     }
 
-    const nextStatus = state.status === "idle" ? "loading" : "refreshing";
     setState({
-      status: nextStatus,
+      status: "loading",
       error: null,
     });
 
@@ -69,7 +84,7 @@ export function createSnapshotStore() {
         setState({
           relayBaseUrl: payload.relayBaseUrl,
           snapshot: normalizeSnapshot(payload.snapshot),
-          status: "ready",
+          status: "connected",
           error: null,
           lastUpdated: payload.fetchedAt,
         });
@@ -77,7 +92,7 @@ export function createSnapshotStore() {
         return payload;
       } catch (error) {
         setState({
-          status: "error",
+          status: getConnectionStatusForRefreshError(error),
           error: error instanceof Error ? error.message : String(error),
         });
         throw error;

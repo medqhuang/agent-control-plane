@@ -119,15 +119,19 @@ h2 {
   background: #e5e7eb;
 }
 
-.status-badge.is-ready {
+.status-badge.is-connected {
   background: #dcfce7;
   color: #166534;
 }
 
-.status-badge.is-loading,
-.status-badge.is-refreshing {
+.status-badge.is-loading {
   background: #dbeafe;
   color: #1d4ed8;
+}
+
+.status-badge.is-disconnected {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .status-badge.is-error {
