@@ -45,17 +45,23 @@ function renderApp(state) {
   const pendingApprovals = approvals.filter(
     (approval) => approval.status === "pending",
   );
+  const hasApprovalAction =
+    Object.keys(state.approvalActionByRequestId).length > 0;
 
   elements.relayEndpoint.textContent = state.relayBaseUrl || "-";
   elements.lastUpdated.textContent = formatLastUpdated(state.lastUpdated);
   elements.sessionCount.textContent = String(sessions.length);
-  elements.approvalCount.textContent = `${pendingApprovals.length}/${approvals.length}`;
+  elements.approvalCount.textContent = String(pendingApprovals.length);
   elements.refreshButton.disabled =
-    state.status === "loading" || state.status === "refreshing";
+    state.status === "loading" ||
+    state.status === "refreshing" ||
+    hasApprovalAction;
 
   updateStatusBadge(state.status);
   renderSessionList(elements.sessionList, sessions);
-  renderApprovalList(elements.approvalList, approvals);
+  renderApprovalList(elements.approvalList, pendingApprovals, {
+    approvalActionByRequestId: state.approvalActionByRequestId,
+  });
 
   if (state.error) {
     elements.errorMessage.hidden = false;
@@ -69,6 +75,24 @@ function renderApp(state) {
 
 elements.refreshButton.addEventListener("click", () => {
   store.refresh();
+});
+
+elements.approvalList.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-approval-decision]");
+  if (!button) {
+    return;
+  }
+
+  const { approvalDecision, requestId } = button.dataset;
+  if (!requestId || !approvalDecision) {
+    return;
+  }
+
+  try {
+    await store.submitApprovalDecision(requestId, approvalDecision);
+  } catch {
+    // Store state already carries the error message for the UI.
+  }
 });
 
 store.subscribe(renderApp);

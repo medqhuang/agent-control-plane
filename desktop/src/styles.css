@@ -201,6 +201,29 @@ h2 {
   line-height: 1.5;
 }
 
+.item-detail-grid {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.detail-row {
+  display: grid;
+  gap: 4px;
+}
+
+.detail-key {
+  color: #6b7280;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.detail-value {
+  color: #374151;
+  word-break: break-word;
+}
+
 .meta-pill {
   border-radius: 999px;
   padding: 4px 8px;
@@ -211,6 +234,44 @@ h2 {
 
 .empty-state {
   color: #6b7280;
+}
+
+.list-item.is-busy {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.approval-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.action-button {
+  min-width: 112px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.action-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.action-button.is-approve {
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.action-button.is-reject {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #991b1b;
 }
 
 @media (max-width: 900px) {

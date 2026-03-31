@@ -8,23 +8,70 @@ function getRelayBaseUrl() {
   return process.env.RELAY_BASE_URL || DEFAULT_RELAY_BASE_URL;
 }
 
-async function fetchJson(url, timeoutMs) {
+function buildRelayErrorMessage(status, payload, fallbackText = "") {
+  const detail = payload && typeof payload === "object" && "detail" in payload
+    ? payload.detail
+    : payload;
+
+  if (typeof detail === "string" && detail !== "") {
+    return `relay responded with ${status}: ${detail}`;
+  }
+
+  if (detail && typeof detail === "object") {
+    if ("message" in detail && typeof detail.message === "string") {
+      return `relay responded with ${status}: ${detail.message}`;
+    }
+
+    return `relay responded with ${status}: ${JSON.stringify(detail)}`;
+  }
+
+  if (fallbackText !== "") {
+    return `relay responded with ${status}: ${fallbackText}`;
+  }
+
+  return `relay responded with ${status}`;
+}
+
+async function requestJson(
+  url,
+  {
+    method = "GET",
+    body,
+    timeoutMs = RELAY_TIMEOUT_MS,
+  } = {},
+) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(url, {
+      method,
       headers: {
         Accept: "application/json",
+        ...(body ? { "Content-Type": "application/json" } : {}),
       },
+      body: body ? JSON.stringify(body) : undefined,
       signal: controller.signal,
     });
 
-    if (!response.ok) {
-      throw new Error(`relay responded with ${response.status}`);
+    const responseText = await response.text();
+    let payload = null;
+
+    if (responseText !== "") {
+      try {
+        payload = JSON.parse(responseText);
+      } catch {
+        payload = null;
+      }
     }
 
-    return response.json();
+    if (!response.ok) {
+      throw new Error(
+        buildRelayErrorMessage(response.status, payload, responseText),
+      );
+    }
+
+    return payload;
   } catch (error) {
     if (error && error.name === "AbortError") {
       throw new Error(`relay request timed out after ${timeoutMs}ms`);
@@ -39,12 +86,36 @@ async function fetchJson(url, timeoutMs) {
 async function getSnapshotPayload() {
   const relayBaseUrl = getRelayBaseUrl();
   const snapshotUrl = new URL("/v1/snapshot", relayBaseUrl).toString();
-  const snapshot = await fetchJson(snapshotUrl, RELAY_TIMEOUT_MS);
+  const snapshot = await requestJson(snapshotUrl);
 
   return {
     relayBaseUrl,
     fetchedAt: new Date().toISOString(),
     snapshot,
+  };
+}
+
+async function submitApprovalDecisionPayload({
+  requestId,
+  decision,
+}) {
+  const relayBaseUrl = getRelayBaseUrl();
+  const approvalResponseUrl = new URL(
+    "/v1/approval-response",
+    relayBaseUrl,
+  ).toString();
+  const response = await requestJson(approvalResponseUrl, {
+    method: "POST",
+    body: {
+      request_id: requestId,
+      decision,
+    },
+  });
+
+  return {
+    relayBaseUrl,
+    respondedAt: new Date().toISOString(),
+    response,
   };
 }
 
@@ -73,6 +144,25 @@ ipcMain.handle("relay:getConfig", async () => {
 
 ipcMain.handle("relay:getSnapshot", async () => {
   return getSnapshotPayload();
+});
+
+ipcMain.handle("relay:submitApprovalDecision", async (_event, payload) => {
+  if (!payload || typeof payload !== "object") {
+    throw new Error("approval payload is required");
+  }
+
+  if (typeof payload.requestId !== "string" || payload.requestId === "") {
+    throw new Error("approval request_id is required");
+  }
+
+  if (payload.decision !== "approve" && payload.decision !== "reject") {
+    throw new Error("approval decision must be approve or reject");
+  }
+
+  return submitApprovalDecisionPayload({
+    requestId: payload.requestId,
+    decision: payload.decision,
+  });
 });
 
 app.whenReady().then(() => {
