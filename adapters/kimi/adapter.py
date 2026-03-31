@@ -1,6 +1,8 @@
 """Minimal Kimi adapter skeleton for approval-request mapping."""
 
 import json
+import os
+import re
 import subprocess
 import tempfile
 import time
@@ -40,8 +42,11 @@ DEMO_RELAY_APPROVAL_EVENT: dict[str, object] = {
 
 _SIMULATED_WRITEBACKS: list[dict[str, object]] = []
 _REAL_REMOTE_SESSION_PREFIX = "kimi_remote_"
+_REMOTE_REQUEST_PREFIX = "kimi_request__"
 _REMOTE_POLL_ATTEMPTS = 30
 _REMOTE_POLL_INTERVAL_SECONDS = 2.0
+_REMOTE_SCRIPT_TIMEOUT_SECONDS = 90
+_FORCE_WRITEBACK_FAILURE_ENV = "KIMI_BRIDGE_FORCE_WRITEBACK_FAILURE"
 
 
 def build_demo_kimi_approval_event(
@@ -79,6 +84,44 @@ def normalize_kimi_event(raw_event: Mapping[str, Any]) -> dict[str, object] | No
     }
 
 
+def build_remote_kimi_session_id(session_suffix: str) -> str:
+    normalized_suffix = _normalize_bridge_segment(session_suffix)
+    return f"{_REAL_REMOTE_SESSION_PREFIX}{normalized_suffix}"
+
+
+def build_remote_kimi_request_id(
+    *,
+    remote_host: str,
+    session_id: str,
+    seq: int,
+) -> str:
+    normalized_remote = _normalize_bridge_segment(remote_host)
+    return f"{_REMOTE_REQUEST_PREFIX}{normalized_remote}__{session_id}__seq_{seq}"
+
+
+def build_remote_kimi_ingress_event(
+    *,
+    remote_host: str,
+    session_id: str,
+    seq: int,
+    command: str,
+) -> dict[str, object]:
+    return {
+        "event": "approval_request",
+        "session_id": session_id,
+        "request_id": build_remote_kimi_request_id(
+            remote_host=remote_host,
+            session_id=session_id,
+            seq=seq,
+        ),
+        "seq": seq,
+        "remote": remote_host,
+        "title": f"remote Kimi approval session {session_id}",
+        "kind": "command",
+        "summary": f"Approve shell command: {command}",
+    }
+
+
 def start_remote_kimi_approval_smoke(
     *,
     relay_base_url: str,
@@ -87,6 +130,7 @@ def start_remote_kimi_approval_smoke(
     command: str = "pwd",
     workdir: str = "~/kimi-web/p2-smoke",
 ) -> dict[str, object]:
+    seq = 1
     prompt = f"Run the shell command {command} and then stop."
     tmux_command = _build_tmux_kimi_command(workdir=workdir, prompt=prompt)
     script = f"""#!/usr/bin/env bash
@@ -122,21 +166,18 @@ EOSSH
         raise RuntimeError(result.stderr.strip() or result.stdout.strip() or "remote Kimi smoke trigger failed")
 
     capture_excerpt = _extract_marked_block(result.stdout)
-    raw_event = {
-        "event": "approval_request",
-        "session_id": session_id,
-        "request_id": f"{session_id}_request_1",
-        "seq": 1,
-        "remote": remote_host,
-        "title": f"remote Kimi approval session {session_id}",
-        "kind": "command",
-        "summary": f"Approve shell command: {command}",
-    }
+    raw_event = build_remote_kimi_ingress_event(
+        remote_host=remote_host,
+        session_id=session_id,
+        seq=seq,
+        command=command,
+    )
     relay_response = push_kimi_event_to_relay(relay_base_url, raw_event)
     return {
         "mode": "real_tmux_smoke",
         "remote_host": remote_host,
         "session_id": session_id,
+        "source_seq": seq,
         "request_id": raw_event["request_id"],
         "capture_excerpt": capture_excerpt,
         "relay_response": relay_response,
@@ -153,37 +194,38 @@ def write_approval_response_to_kimi(
 ) -> dict[str, object]:
     provider_action = "approve_request" if decision == "approve" else "reject_request"
     if remote and session_id.startswith(_REAL_REMOTE_SESSION_PREFIX):
+        _maybe_raise_forced_remote_writeback_failure(
+            remote=remote,
+            session_id=session_id,
+            request_id=request_id,
+        )
         capture_excerpt = _write_remote_tmux_decision(
             remote_host=remote,
             session_id=session_id,
             decision=decision,
         )
-        return {
-            "type": "approval_response_writeback",
-            "provider": "kimi",
-            "session_id": session_id,
-            "request_id": request_id,
-            "decision": decision,
-            "provider_action": provider_action,
-            "source_seq": source_seq,
-            "remote": remote,
-            "mode": "real_tmux_smoke",
-            "result": "real_tmux_ok",
-            "capture_excerpt": capture_excerpt,
-        }
+        return _build_provider_writeback(
+            remote=remote,
+            session_id=session_id,
+            request_id=request_id,
+            decision=decision,
+            provider_action=provider_action,
+            source_seq=source_seq,
+            mode="real_tmux_smoke",
+            result="real_tmux_ok",
+            capture_excerpt=capture_excerpt,
+        )
 
-    writeback = {
-        "type": "approval_response_writeback",
-        "provider": "kimi",
-        "session_id": session_id,
-        "request_id": request_id,
-        "decision": decision,
-        "provider_action": provider_action,
-        "source_seq": source_seq,
-        "remote": remote,
-        "mode": "simulated",
-        "result": "simulated_ok",
-    }
+    writeback = _build_provider_writeback(
+        remote=remote,
+        session_id=session_id,
+        request_id=request_id,
+        decision=decision,
+        provider_action=provider_action,
+        source_seq=source_seq,
+        mode="simulated",
+        result="simulated_ok",
+    )
     _SIMULATED_WRITEBACKS.append(writeback)
     return dict(writeback)
 
@@ -219,6 +261,35 @@ def _build_tmux_kimi_command(*, workdir: str, prompt: str) -> str:
         f"kimi -p {quote(prompt)}"
     )
     return f"bash -lc {quote(shell_command)}"
+
+
+def _build_provider_writeback(
+    *,
+    remote: str | None,
+    session_id: str,
+    request_id: str,
+    decision: str,
+    provider_action: str,
+    source_seq: int,
+    mode: str,
+    result: str,
+    capture_excerpt: str | None = None,
+) -> dict[str, object]:
+    writeback: dict[str, object] = {
+        "type": "approval_response_writeback",
+        "provider": "kimi",
+        "remote": remote,
+        "session_id": session_id,
+        "request_id": request_id,
+        "source_seq": source_seq,
+        "decision": decision,
+        "provider_action": provider_action,
+        "mode": mode,
+        "result": result,
+    }
+    if capture_excerpt:
+        writeback["capture_excerpt"] = capture_excerpt
+    return writeback
 
 
 def _write_remote_tmux_decision(
@@ -258,9 +329,10 @@ EOSSH
 """
     result = _run_wsl_bash_script(script)
     if result.returncode != 0:
-        raise RuntimeError(
-            result.stderr.strip() or result.stdout.strip() or "remote Kimi writeback failed"
-        )
+        error_text = result.stderr.strip() or result.stdout.strip() or "remote Kimi writeback failed"
+        if "approval prompt still present after writeback" in error_text:
+            raise TimeoutError(error_text)
+        raise RuntimeError(error_text)
     return _extract_marked_block(result.stdout)
 
 
@@ -291,8 +363,11 @@ def _run_wsl_bash_script(script: str) -> subprocess.CompletedProcess[str]:
             text=True,
             encoding="utf-8",
             errors="replace",
+            timeout=_REMOTE_SCRIPT_TIMEOUT_SECONDS,
             check=False,
         )
+    except subprocess.TimeoutExpired as exc:
+        raise TimeoutError("remote Kimi bridge command timed out") from exc
     finally:
         script_path.unlink(missing_ok=True)
 
@@ -301,3 +376,28 @@ def _windows_path_to_wsl(path: Path) -> str:
     path_text = str(path)
     drive, remainder = path_text[0], path_text[2:]
     return f"/mnt/{drive.lower()}{remainder.replace(chr(92), '/')}"
+
+
+def _normalize_bridge_segment(value: str) -> str:
+    normalized = re.sub(r"[^a-zA-Z0-9]+", "_", value).strip("_").lower()
+    return normalized or "unknown"
+
+
+def _maybe_raise_forced_remote_writeback_failure(
+    *,
+    remote: str,
+    session_id: str,
+    request_id: str,
+) -> None:
+    failure_mode = os.getenv(_FORCE_WRITEBACK_FAILURE_ENV, "").strip().lower()
+    if failure_mode == "":
+        return
+
+    message = (
+        f"forced remote Kimi writeback failure: remote={remote} "
+        f"session_id={session_id} request_id={request_id}"
+    )
+    if failure_mode == "timeout":
+        raise TimeoutError(message)
+    if failure_mode == "error":
+        raise RuntimeError(message)

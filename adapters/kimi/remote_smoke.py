@@ -4,6 +4,7 @@ import argparse
 import json
 import time
 
+from adapters.kimi import build_remote_kimi_session_id
 from adapters.kimi import start_remote_kimi_approval_smoke
 
 
@@ -33,7 +34,7 @@ def main() -> None:
     result = start_remote_kimi_approval_smoke(
         relay_base_url=args.relay_base_url,
         remote_host=args.remote_host,
-        session_id=f"kimi_remote_{args.session_suffix}",
+        session_id=build_remote_kimi_session_id(args.session_suffix),
         command=args.command,
         workdir=args.workdir,
     )

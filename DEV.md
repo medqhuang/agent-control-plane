@@ -42,8 +42,9 @@ Kimi / Claude / Codex CLI
 - `已完成`：`P0` 项目初始化
 - `已完成`：`P1` Relay Core
 - `已完成`：`P1.5` Relay 收口
-- `当前`：`P2` Kimi 闭环
-- `后续`：`P3` 本地控制端 MVP
+- `已完成`：`P2` Kimi 闭环
+- `已完成`：`P2.5` Kimi bridge 收口
+- `当前`：`P3` 本地控制端 MVP
 - `后续`：`P4` Multi-Remote
 - `后续`：`P5` 跨平台清理
 - `后续`：`P6` Claude Support
@@ -52,7 +53,7 @@ Kimi / Claude / Codex CLI
 
 ## 当前基线
 
-进入 `P2` 前，relay 已具备下面这些稳定基线：
+进入 `P3` 前，relay 与 Kimi bridge 已具备下面这些稳定基线：
 
 - `GET /v1/snapshot`
 - `POST /v1/approval-response`
@@ -61,13 +62,23 @@ Kimi / Claude / Codex CLI
 - 最小 `event log`
 - approval 幂等保护
 - approval / session 状态一致性
+- Kimi 最小真实远端 approval 闭环
+- remote-backed 失败 / 超时不污染本地状态
 
-进入 `P2` 时默认冻结以下规则，不要顺手重构：
+进入 `P3` 时默认冻结以下规则，不要顺手重构：
 
 - `approved -> session=running`
 - 相同决策重复提交：返回成功，但不重复写事件
 - 冲突决策重复提交：返回 `409`
 - relay 仍然是状态真源
+- 先 remote writeback 成功，再提交本地状态
+
+当前 bridge 限制也一并冻结认知：
+
+- `request_id` 仍是 adapter 派生，不是 Kimi 原生 ID
+- writeback 仍依赖 `tmux` 与当前 TUI 布局
+- relay 仍为 in-memory 状态
+- 当前能力足以进入 `P3`，但不足以宣称为生产级集成
 
 ## P0 项目初始化
 
@@ -173,7 +184,38 @@ agent 分配建议：
 - 本地点批准后远程继续执行
 
 当前状态：
-- `当前阶段`
+- `已完成`
+
+## P2.5 Kimi Bridge 收口
+
+目标：
+- 在进入本地控制端前，先把 Kimi bridge 的远端链路语义收稳
+
+agent 分配建议：
+- `单 agent 串行`
+- 原因：这是 bridge contract 固化阶段，必须统一口径
+
+这一阶段 agent 做什么：
+- 固化当前 Kimi bridge contract
+- 保证先 remote writeback 成功，再提交本地状态
+- 复核远端 `approve` 路径
+- 复核远端 `reject` 路径
+- 复核 remote-backed failure / timeout 路径
+
+这一阶段不要做：
+- 本地 UI
+- 多 remote
+- relay 重构
+- 把 bridge 包装成官方协议级集成
+
+完成标准：
+- 真实远端 `approve` 路径通过
+- 真实远端 `reject` 路径通过
+- remote-backed failure / timeout 不污染本地状态
+- 当前 bridge 限制被明确记录
+
+当前状态：
+- `已完成`
 
 ## P3 本地控制端 MVP
 
@@ -200,6 +242,9 @@ agent 分配建议：
 
 完成标准：
 - 不看 SSH 终端，也能完成一次完整审批
+
+当前状态：
+- `当前阶段`
 
 ## P4 Multi-Remote
 
@@ -319,7 +364,7 @@ agent 分配建议：
 每次只分配一个小切片，最多覆盖一个阶段里的一个点。
 
 总规则：
-- `P0-P2`：单 agent 串行
+- `P0-P2.5`：单 agent 串行
 - `P1.5`：单 agent 收口
 - `P3-P4`：谨慎双 agent 并行
 - `P5`：单 agent 收口
@@ -347,28 +392,28 @@ agent 分配建议：
 推荐模板：
 
 ```text
-当前阶段：P2 Kimi 闭环
+当前阶段：P3 本地控制端 MVP
 
 当前目标：
-实现第一条 Kimi approval 闭环。
+实现本地 session 列表和 pending approvals 列表。
 
 这次只做：
-- Kimi adapter 最小骨架
-- Kimi 事件到 relay 的最小映射
-- 真实 approval request 进入 relay
+- 本地 session 列表
+- 本地 pending approvals 列表
+- 本地 approve / reject 操作入口
 
 这次不要做：
-- 本地 UI
 - 多 remote
 - Claude
 - Codex
+- 重构 relay
+- 重构 Kimi bridge
 
 允许修改：
-- adapters/kimi/
-- relay/
+- desktop/
 
 完成标准：
-- 本地能看到来自 Kimi 的真实 approval request
+- 本地界面能显示 session 和 pending approvals
 - 告诉我验证步骤
 ```
 
@@ -428,4 +473,4 @@ git diff
 
 一句话收尾：
 
-`P0-P1.5` 已完成，当前只推进 `P2 Kimi 闭环`，不要并行开启 `P3`。
+`P0-P2.5` 已完成，当前只推进 `P3 本地控制端 MVP`，不要顺手回退 bridge 规则。

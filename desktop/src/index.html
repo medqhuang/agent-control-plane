@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Agent Control Plane</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">P3 Local Control MVP</p>
+          <h1>Agent Control Plane</h1>
+          <p class="subtitle">
+            Electron shell with a single relay snapshot reader.
+          </p>
+        </div>
+        <button id="refresh-button" class="refresh-button" type="button">
+          Refresh Snapshot
+        </button>
+      </header>
+
+      <section class="status-panel">
+        <div class="status-row">
+          <div>
+            <p class="label">Relay</p>
+            <p id="relay-endpoint" class="value">-</p>
+          </div>
+          <div>
+            <p class="label">Connection</p>
+            <p id="connection-status" class="value status-badge">Idle</p>
+          </div>
+          <div>
+            <p class="label">Last Updated</p>
+            <p id="last-updated" class="value">Never</p>
+          </div>
+        </div>
+        <p id="error-message" class="error-message" hidden></p>
+      </section>
+
+      <main class="content-grid">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Future Feature Slot</p>
+              <h2>Sessions</h2>
+            </div>
+            <p id="session-count" class="count-pill">0</p>
+          </div>
+          <ul id="session-list" class="item-list"></ul>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Future Feature Slot</p>
+              <h2>Approvals</h2>
+            </div>
+            <p id="approval-count" class="count-pill">0</p>
+          </div>
+          <ul id="approval-list" class="item-list"></ul>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="./renderer/app.js"></script>
+  </body>
+</html>

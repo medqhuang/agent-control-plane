@@ -6,17 +6,19 @@
 
 ## Status
 
-当前状态：`P0`、`P1`、`P1.5` 已完成，准备进入 `P2 Kimi 闭环`。
+当前状态：`P0`、`P1`、`P1.5`、`P2`、`P2.5` 已完成，准备进入 `P3 本地控制端 MVP`。
 
 已完成：
 - `P0` 项目初始化
 - `P1` Relay Core
 - `P1.5` Relay 收口
+- `P2` Kimi 闭环
+- `P2.5` Kimi bridge 收口与远端复核
 
 当前优先级：
-- 接入 Kimi adapter
-- 跑通第一条真实远程 approval 闭环
-- 保持现有 relay 状态规则不回退
+- 实现本地控制端 MVP
+- 在本地界面里展示 session 与 pending approvals
+- 保持现有 relay 与 Kimi bridge 规则不回退
 
 ## 项目定位
 
@@ -65,10 +67,30 @@
 - approval 幂等保护
 - approval / session 状态一致性收口
 
-当前 P1.5 基线规则：
+当前稳定基线规则：
 - `approved -> session=running`
 - 相同决策重复提交：`200` 且不重复写事件
 - 冲突决策重复提交：`409`
+
+当前已证明的 Kimi 集成能力：
+- 已跑通真实远端 Kimi approval 闭环
+- 已复核远端 `approve` 路径
+- 已复核远端 `reject` 路径
+- 已验证 remote-backed 失败 / 超时路径不会污染本地状态
+
+## 当前集成状态
+
+当前 Kimi 集成属于 `bridge-based integration`，不是官方协议级集成。
+
+这意味着：
+- 项目已经具备可继续向本地控制端推进的真实远端链路
+- 但当前集成仍应视为工程化 bridge，而不是生产级原生集成
+
+当前主要限制：
+- `request_id` 仍由 adapter 派生，不是 Kimi 原生 ID
+- remote writeback 仍依赖 `tmux` 按键和当前 TUI 布局
+- `reject` 路径虽然已复核，但证据强度仍弱于完全结构化协议回执
+- relay 当前仍是 in-memory 状态，没有持久化保护
 
 ## MVP 范围
 
@@ -143,12 +165,13 @@ flowchart LR
 - `P0` 项目初始化
 - `P1` Relay Core
 - `P1.5` Relay 收口
+- `P2` Kimi 闭环
+- `P2.5` Kimi bridge 收口与远端复核
 
 `当前`
-- `P2` Kimi 闭环
+- `P3` 本地控制端 MVP
 
 `后续`
-- `P3` 本地控制端 MVP
 - `P4` Multi-Remote
 - `P5` 跨平台清理
 - `P6` Claude Support

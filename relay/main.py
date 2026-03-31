@@ -18,6 +18,8 @@ from relay.approval_store import is_terminal_status
 from relay.approval_store import list_approvals
 from relay.approval_store import upsert_pending_approval_request
 from relay.event_log import append_approval_response_event
+from relay.event_log import get_next_event_seq
+from relay.session_store import get_session
 from relay.session_store import list_sessions
 from relay.session_store import sync_session_status_from_approval
 from relay.session_store import upsert_session_from_approval_request
@@ -101,6 +103,51 @@ def post_approval_response(
             },
         )
 
+    session = get_session(approval["session_id"])
+    if session is None:
+        raise HTTPException(status_code=404, detail="session not found")
+
+    if session["provider"] != "kimi":
+        raise HTTPException(status_code=501, detail="provider writeback not implemented")
+
+    event_seq = get_next_event_seq()
+    try:
+        provider_writeback = write_approval_response_to_kimi(
+            session_id=approval["session_id"],
+            request_id=approval["request_id"],
+            decision=payload.decision,
+            source_seq=event_seq,
+            remote=session["remote"],
+        )
+    except TimeoutError as exc:
+        raise HTTPException(
+            status_code=504,
+            detail={
+                "message": "provider writeback timed out",
+                "provider": session["provider"],
+                "remote": session["remote"],
+                "session_id": approval["session_id"],
+                "request_id": approval["request_id"],
+                "decision": payload.decision,
+                "source_seq": event_seq,
+                "reason": str(exc),
+            },
+        ) from exc
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "provider writeback failed",
+                "provider": session["provider"],
+                "remote": session["remote"],
+                "session_id": approval["session_id"],
+                "request_id": approval["request_id"],
+                "decision": payload.decision,
+                "source_seq": event_seq,
+                "reason": str(exc),
+            },
+        ) from exc
+
     approval = apply_decision(payload.request_id, payload.decision)
     session = sync_session_status_from_approval(
         session_id=approval["session_id"],
@@ -114,16 +161,7 @@ def post_approval_response(
         session_id=approval["session_id"],
         decision=payload.decision,
         approval_status=approval["status"],
-    )
-    if session["provider"] != "kimi":
-        raise HTTPException(status_code=501, detail="provider writeback not implemented")
-
-    provider_writeback = write_approval_response_to_kimi(
-        session_id=approval["session_id"],
-        request_id=approval["request_id"],
-        decision=payload.decision,
-        source_seq=int(event["seq"]),
-        remote=session["remote"],
+        seq=event_seq,
     )
     return {
         "approval": approval,

@@ -1,0 +1,14 @@
+{
+  "name": "agent-control-plane-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Minimal local control app shell for Agent Control Plane MVP.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron ."
+  },
+  "devDependencies": {
+    "electron": "41.1.0"
+  }
+}
