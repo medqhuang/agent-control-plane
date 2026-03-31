@@ -39,15 +39,35 @@ Kimi / Claude / Codex CLI
 
 ## 阶段总览
 
-1. `P0` 项目初始化
-2. `P1` Relay Core
-3. `P2` Kimi 闭环
-4. `P3` 本地控制端 MVP
-5. `P4` Multi-Remote
-6. `P5` 跨平台清理
-7. `P6` Claude Support
-8. `P7` Codex Experimental
-9. `P8` 可靠性增强
+- `已完成`：`P0` 项目初始化
+- `已完成`：`P1` Relay Core
+- `已完成`：`P1.5` Relay 收口
+- `当前`：`P2` Kimi 闭环
+- `后续`：`P3` 本地控制端 MVP
+- `后续`：`P4` Multi-Remote
+- `后续`：`P5` 跨平台清理
+- `后续`：`P6` Claude Support
+- `后续`：`P7` Codex Experimental
+- `后续`：`P8` 可靠性增强
+
+## 当前基线
+
+进入 `P2` 前，relay 已具备下面这些稳定基线：
+
+- `GET /v1/snapshot`
+- `POST /v1/approval-response`
+- in-memory `session store`
+- in-memory `approval store`
+- 最小 `event log`
+- approval 幂等保护
+- approval / session 状态一致性
+
+进入 `P2` 时默认冻结以下规则，不要顺手重构：
+
+- `approved -> session=running`
+- 相同决策重复提交：返回成功，但不重复写事件
+- 冲突决策重复提交：返回 `409`
+- relay 仍然是状态真源
 
 ## P0 项目初始化
 
@@ -100,6 +120,31 @@ agent 分配建议：
 - 本地启动 relay
 - 访问 `GET /v1/snapshot` 能返回固定 JSON
 
+当前状态：
+- `已完成`
+
+## P1.5 Relay 收口
+
+目标：
+- 在进入真实 provider 前，先把 relay 状态语义收稳
+
+agent 分配建议：
+- `单 agent 串行`
+- 原因：这是 P1 和 P2 之间的收口阶段，必须统一规则
+
+这一阶段 agent 做什么：
+- 统一 approval 和 session 的最小状态关系
+- 给 `approval-response` 增加幂等保护
+- 阻止冲突决策污染事件流
+
+完成标准：
+- snapshot 中 approval 与 session 状态不矛盾
+- 相同决策重复提交不重复写事件
+- 冲突决策重复提交返回 `409`
+
+当前状态：
+- `已完成`
+
 ## P2 Kimi 闭环
 
 目标：
@@ -120,11 +165,15 @@ agent 分配建议：
 - Claude
 - Codex
 - 桌面端美化
+- 回退 P1.5 已冻结的状态规则
 
 完成标准：
 - 远程 Kimi 触发审批
 - 本地能看到审批
 - 本地点批准后远程继续执行
+
+当前状态：
+- `当前阶段`
 
 ## P3 本地控制端 MVP
 
@@ -271,6 +320,7 @@ agent 分配建议：
 
 总规则：
 - `P0-P2`：单 agent 串行
+- `P1.5`：单 agent 收口
 - `P3-P4`：谨慎双 agent 并行
 - `P5`：单 agent 收口
 - `P6`：可双 agent 并行
@@ -297,27 +347,28 @@ agent 分配建议：
 推荐模板：
 
 ```text
-当前阶段：P1 Relay Core
+当前阶段：P2 Kimi 闭环
 
 当前目标：
-实现 GET /v1/snapshot。
+实现第一条 Kimi approval 闭环。
 
 这次只做：
-- relay 最小 HTTP 服务
-- GET /v1/snapshot
-- 用假数据返回 1 个 session 和 1 个 approval
+- Kimi adapter 最小骨架
+- Kimi 事件到 relay 的最小映射
+- 真实 approval request 进入 relay
 
 这次不要做：
-- provider adapter
 - 本地 UI
 - 多 remote
+- Claude
+- Codex
 
 允许修改：
+- adapters/kimi/
 - relay/
 
 完成标准：
-- 本地启动成功
-- GET /v1/snapshot 返回固定 JSON
+- 本地能看到来自 Kimi 的真实 approval request
 - 告诉我验证步骤
 ```
 
@@ -377,4 +428,4 @@ git diff
 
 一句话收尾：
 
-先做 `P1 Relay Core`，再做 `P2 Kimi 闭环`，不要跳阶段。
+`P0-P1.5` 已完成，当前只推进 `P2 Kimi 闭环`，不要并行开启 `P3`。

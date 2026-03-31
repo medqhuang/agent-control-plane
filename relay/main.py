@@ -6,6 +6,7 @@ stores, and provider-facing integration points.
 
 from typing import Literal
 
+from adapters.kimi import write_approval_response_to_kimi
 from fastapi import FastAPI
 from fastapi import HTTPException
 from pydantic import BaseModel
@@ -15,9 +16,11 @@ from relay.approval_store import get_approval
 from relay.approval_store import get_status_for_decision
 from relay.approval_store import is_terminal_status
 from relay.approval_store import list_approvals
+from relay.approval_store import upsert_pending_approval_request
 from relay.event_log import append_approval_response_event
 from relay.session_store import list_sessions
 from relay.session_store import sync_session_status_from_approval
+from relay.session_store import upsert_session_from_approval_request
 
 
 app = FastAPI(
@@ -34,11 +37,38 @@ class ApprovalResponseRequest(BaseModel):
     decision: Literal["approve", "reject"]
 
 
+class KimiApprovalRequestEvent(BaseModel):
+    type: Literal["approval_request"]
+    provider: Literal["kimi"]
+    session_id: str
+    request_id: str
+    seq: int
+    remote: str
+    title: str
+    kind: str
+    status: Literal["pending"]
+    summary: str
+
+
 @app.get("/v1/snapshot")
 def get_snapshot() -> dict[str, list[dict[str, str]]]:
     return {
         "sessions": list_sessions(),
         "approvals": list_approvals(),
+    }
+
+
+@app.post("/v1/kimi/approval-request")
+def post_kimi_approval_request(
+    payload: KimiApprovalRequestEvent,
+) -> dict[str, object]:
+    normalized_event = payload.model_dump()
+    session = upsert_session_from_approval_request(normalized_event)
+    approval = upsert_pending_approval_request(normalized_event)
+    return {
+        "session": session,
+        "approval": approval,
+        "event": normalized_event,
     }
 
 
@@ -58,6 +88,7 @@ def post_approval_response(
                 "event": None,
                 "idempotent": True,
                 "message": "decision already applied",
+                "provider_writeback": None,
             }
 
         raise HTTPException(
@@ -84,8 +115,19 @@ def post_approval_response(
         decision=payload.decision,
         approval_status=approval["status"],
     )
+    if session["provider"] != "kimi":
+        raise HTTPException(status_code=501, detail="provider writeback not implemented")
+
+    provider_writeback = write_approval_response_to_kimi(
+        session_id=approval["session_id"],
+        request_id=approval["request_id"],
+        decision=payload.decision,
+        source_seq=int(event["seq"]),
+        remote=session["remote"],
+    )
     return {
         "approval": approval,
         "event": event,
         "idempotent": False,
+        "provider_writeback": provider_writeback,
     }

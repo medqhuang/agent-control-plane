@@ -1,5 +1,7 @@
 """Minimal in-memory approval store for P1 relay development."""
 
+from typing import Mapping
+
 _APPROVALS_BY_REQUEST_ID: dict[str, dict[str, str]] = {
     "approval_demo_1": {
         "request_id": "approval_demo_1",
@@ -43,4 +45,30 @@ def apply_decision(request_id: str, decision: str) -> dict[str, str] | None:
         return None
 
     approval["status"] = get_status_for_decision(decision)
+    return dict(approval)
+
+
+def upsert_pending_approval_request(
+    event: Mapping[str, object],
+) -> dict[str, str]:
+    request_id = str(event["request_id"])
+    approval = _APPROVALS_BY_REQUEST_ID.get(request_id)
+    if approval is None:
+        approval = {
+            "request_id": request_id,
+            "session_id": str(event["session_id"]),
+            "status": "pending",
+            "kind": str(event["kind"]),
+            "summary": str(event["summary"]),
+        }
+        _APPROVALS_BY_REQUEST_ID[request_id] = approval
+        return dict(approval)
+
+    if approval["status"] != "pending":
+        return dict(approval)
+
+    approval["session_id"] = str(event["session_id"])
+    approval["kind"] = str(event["kind"])
+    approval["summary"] = str(event["summary"])
+    approval["status"] = "pending"
     return dict(approval)

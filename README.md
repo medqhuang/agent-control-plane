@@ -6,12 +6,17 @@
 
 ## Status
 
-当前状态：规划完成，准备进入早期实现阶段。
+当前状态：`P0`、`P1`、`P1.5` 已完成，准备进入 `P2 Kimi 闭环`。
+
+已完成：
+- `P0` 项目初始化
+- `P1` Relay Core
+- `P1.5` Relay 收口
 
 当前优先级：
-- 先完成 `relay` 最小骨架
-- 先跑通 Kimi 的单条审批闭环
-- 再扩展到本地控制端和多 remote
+- 接入 Kimi adapter
+- 跑通第一条真实远程 approval 闭环
+- 保持现有 relay 状态规则不回退
 
 ## 项目定位
 
@@ -47,6 +52,23 @@
 - 在本地统一处理 approval request
 - 通过 SSH 工作流连接远程环境
 - 保持核心层跨平台，避免被单一桌面系统绑定
+
+## 当前已实现
+
+当前 relay 基线能力：
+- FastAPI 运行入口
+- `GET /v1/snapshot`
+- `POST /v1/approval-response`
+- in-memory `session store`
+- in-memory `approval store`
+- 最小 `event log`
+- approval 幂等保护
+- approval / session 状态一致性收口
+
+当前 P1.5 基线规则：
+- `approved -> session=running`
+- 相同决策重复提交：`200` 且不重复写事件
+- 冲突决策重复提交：`409`
 
 ## MVP 范围
 
@@ -117,26 +139,21 @@ flowchart LR
 
 ## 当前实现路线
 
-`Step 1`
-先做 `relay` 最小骨架。
+`已完成`
+- `P0` 项目初始化
+- `P1` Relay Core
+- `P1.5` Relay 收口
 
-`Step 2`
-先接 Kimi，跑通单条 approval 闭环。
+`当前`
+- `P2` Kimi 闭环
 
-`Step 3`
-再做本地控制端。
-
-`Step 4`
-再做多 remote 聚合。
-
-`Step 5`
-再做跨平台约束清理和平台验证。
-
-`Step 6`
-再接 Claude。
-
-`Step 7`
-最后接 Codex 实验支持。
+`后续`
+- `P3` 本地控制端 MVP
+- `P4` Multi-Remote
+- `P5` 跨平台清理
+- `P6` Claude Support
+- `P7` Codex Experimental
+- `P8` 可靠性增强
 
 ## 仓库结构
 
@@ -144,6 +161,8 @@ flowchart LR
 agent-control-plane/
 ├── README.md
 ├── DEV.md
+├── P0_worklog.md
+├── P1_worklog.md
 ├── logs/
 │   └── 2026-03-31.md
 ├── relay/
@@ -159,11 +178,13 @@ agent-control-plane/
 如果你是维护者，日常开发主要看：
 - `README.md`
 - `DEV.md`
+- `P0_worklog.md`
+- `P1_worklog.md`
 - `logs/当天日期.md`
 
 其中：
 - `README.md` 负责公开说明项目定位、范围和路线
-- `DEV.md` 负责解释架构、实现方式和开发阶段
+- `DEV.md` 负责解释当前阶段、派工方式和下一步
 
 ## License
 

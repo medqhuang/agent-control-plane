@@ -1,5 +1,7 @@
 """Minimal in-memory session store for P1 relay development."""
 
+from typing import Mapping
+
 # README.md defines the shared session status model for the relay core.
 SESSION_STATUSES = (
     "running",
@@ -47,4 +49,27 @@ def sync_session_status_from_approval(
         return None
 
     session["status"] = _SESSION_STATUS_BY_APPROVAL_STATUS[approval_status]
+    return dict(session)
+
+
+def upsert_session_from_approval_request(
+    event: Mapping[str, object],
+) -> dict[str, str]:
+    session_id = str(event["session_id"])
+    session = _SESSIONS_BY_ID.get(session_id)
+    if session is None:
+        session = {
+            "id": session_id,
+            "provider": str(event["provider"]),
+            "remote": str(event["remote"]),
+            "title": str(event["title"]),
+            "status": "waiting_approval",
+        }
+        _SESSIONS_BY_ID[session_id] = session
+    else:
+        session["provider"] = str(event["provider"])
+        session["remote"] = str(event["remote"])
+        session["title"] = str(event["title"])
+
+    session["status"] = _SESSION_STATUS_BY_APPROVAL_STATUS[str(event["status"])]
     return dict(session)
