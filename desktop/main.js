@@ -97,6 +97,7 @@ async function getSnapshotPayload() {
 
 async function submitApprovalDecisionPayload({
   requestId,
+  remoteId = "",
   decision,
 }) {
   const relayBaseUrl = getRelayBaseUrl();
@@ -108,6 +109,7 @@ async function submitApprovalDecisionPayload({
     method: "POST",
     body: {
       request_id: requestId,
+      remote_id: remoteId,
       decision,
     },
   });
@@ -159,8 +161,13 @@ ipcMain.handle("relay:submitApprovalDecision", async (_event, payload) => {
     throw new Error("approval decision must be approve or reject");
   }
 
+  if ("remoteId" in payload && typeof payload.remoteId !== "string") {
+    throw new Error("approval remote_id must be a string when provided");
+  }
+
   return submitApprovalDecisionPayload({
     requestId: payload.requestId,
+    remoteId: typeof payload.remoteId === "string" ? payload.remoteId : "",
     decision: payload.decision,
   });
 });

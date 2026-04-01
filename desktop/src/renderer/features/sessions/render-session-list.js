@@ -27,13 +27,50 @@ function readSessionField(session, fieldName, fallback) {
 }
 
 function normalizeSession(session) {
+  const remoteId = readSessionField(
+    session,
+    "remote_id",
+    readSessionField(session, "remote", "unknown"),
+  );
+  const server = session && typeof session === "object"
+    ? session.server
+    : null;
+  const remoteLabel = server && typeof server === "object"
+    ? readSessionField(server, "display_name", remoteId)
+    : remoteId;
   return {
     id: readSessionField(session, "id", "-"),
     provider: readSessionField(session, "provider", "unknown"),
-    remote: readSessionField(session, "remote", "unknown"),
+    remote: readSessionField(session, "remote", remoteId),
+    remoteId,
+    remoteLabel,
     status: readSessionField(session, "status", "unknown"),
     title: readSessionField(session, "title", "-"),
   };
+}
+
+function createGroupHeader(title, subtitle, count) {
+  const header = document.createElement("div");
+  header.className = "group-header";
+
+  const heading = document.createElement("div");
+  heading.className = "group-heading";
+
+  const groupTitle = document.createElement("div");
+  groupTitle.className = "group-title";
+  groupTitle.textContent = title;
+
+  const groupSubtitle = document.createElement("p");
+  groupSubtitle.className = "group-subtitle";
+  groupSubtitle.textContent = subtitle;
+
+  const countPill = document.createElement("span");
+  countPill.className = "count-pill group-count-pill";
+  countPill.textContent = String(count);
+
+  heading.append(groupTitle, groupSubtitle);
+  header.append(heading, countPill);
+  return header;
 }
 
 export function renderSessionList(container, sessions) {
@@ -46,28 +83,65 @@ export function renderSessionList(container, sessions) {
     return;
   }
 
+  const groupedSessions = new Map();
   for (const rawSession of sessionItems) {
     const session = normalizeSession(rawSession);
-    const item = document.createElement("li");
-    item.className = "list-item";
+    const groupKey = session.remoteId;
+    if (!groupedSessions.has(groupKey)) {
+      groupedSessions.set(groupKey, {
+        remoteId: session.remoteId,
+        remoteLabel: session.remoteLabel,
+        items: [],
+      });
+    }
+    groupedSessions.get(groupKey).items.push(session);
+  }
 
-    const title = document.createElement("div");
-    title.className = "item-title";
-    title.textContent = session.id;
+  const groups = [...groupedSessions.values()].sort((left, right) => {
+    const leftLabel = `${left.remoteLabel} ${left.remoteId}`.toLowerCase();
+    const rightLabel = `${right.remoteLabel} ${right.remoteId}`.toLowerCase();
+    return leftLabel.localeCompare(rightLabel);
+  });
 
-    const meta = document.createElement("div");
-    meta.className = "item-meta";
-    meta.append(
-      createMetaPill(`provider: ${session.provider}`),
-      createMetaPill(`remote: ${session.remote}`),
-      createMetaPill(`status: ${session.status}`),
+  for (const group of groups) {
+    const groupSection = document.createElement("li");
+    groupSection.className = "group-section";
+    groupSection.append(
+      createGroupHeader(
+        group.remoteLabel,
+        `remote_id: ${group.remoteId}`,
+        group.items.length,
+      ),
     );
 
-    const detail = document.createElement("p");
-    detail.className = "item-detail";
-    detail.textContent = `title: ${session.title}`;
+    const groupList = document.createElement("ul");
+    groupList.className = "group-item-list";
 
-    item.append(title, meta, detail);
-    container.append(item);
+    for (const session of group.items) {
+      const item = document.createElement("li");
+      item.className = "list-item";
+
+      const title = document.createElement("div");
+      title.className = "item-title";
+      title.textContent = session.id;
+
+      const meta = document.createElement("div");
+      meta.className = "item-meta";
+      meta.append(
+        createMetaPill(`provider: ${session.provider}`),
+        createMetaPill(`remote: ${session.remoteId}`),
+        createMetaPill(`status: ${session.status}`),
+      );
+
+      const detail = document.createElement("p");
+      detail.className = "item-detail";
+      detail.textContent = `title: ${session.title}`;
+
+      item.append(title, meta, detail);
+      groupList.append(item);
+    }
+
+    groupSection.append(groupList);
+    container.append(groupSection);
   }
 }

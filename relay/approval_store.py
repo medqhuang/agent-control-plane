@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Mapping
 
-_APPROVALS_BY_REQUEST_ID: dict[str, dict[str, object]] = {}
+_APPROVALS_BY_ID: dict[str, dict[str, object]] = {}
 
 _STATUS_BY_DECISION = {
     "approve": "approved",
@@ -14,12 +14,27 @@ _STATUS_BY_DECISION = {
 _TERMINAL_STATUSES = ("approved", "rejected")
 
 
+class ApprovalLookupAmbiguousError(LookupError):
+    """Raised when request_id-only lookup matches multiple remote approvals."""
+
+    def __init__(self, request_id: str, remote_ids: list[str]) -> None:
+        super().__init__(
+            f"approval request_id {request_id} is ambiguous across multiple remotes"
+        )
+        self.request_id = request_id
+        self.remote_ids = remote_ids
+
+
 def list_approvals() -> list[dict[str, object]]:
-    return [dict(approval) for approval in _APPROVALS_BY_REQUEST_ID.values()]
+    return [dict(approval) for approval in _APPROVALS_BY_ID.values()]
 
 
-def get_approval(request_id: str) -> dict[str, object] | None:
-    approval = _APPROVALS_BY_REQUEST_ID.get(request_id)
+def get_approval(
+    request_id: str,
+    *,
+    remote_id: str | None = None,
+) -> dict[str, object] | None:
+    approval = _resolve_approval(request_id, remote_id=remote_id)
     if approval is None:
         return None
     return dict(approval)
@@ -33,8 +48,13 @@ def is_terminal_status(status: str) -> bool:
     return status in _TERMINAL_STATUSES
 
 
-def apply_decision(request_id: str, decision: str) -> dict[str, object] | None:
-    approval = _APPROVALS_BY_REQUEST_ID.get(request_id)
+def apply_decision(
+    request_id: str,
+    decision: str,
+    *,
+    remote_id: str | None = None,
+) -> dict[str, object] | None:
+    approval = _resolve_approval(request_id, remote_id=remote_id)
     if approval is None:
         return None
 
@@ -88,7 +108,8 @@ def _upsert_pending_approval(
     source_seq: int,
     updated_at: str,
 ) -> tuple[dict[str, object], bool]:
-    approval = _APPROVALS_BY_REQUEST_ID.get(request_id)
+    approval_id = _approval_id(remote_id, request_id)
+    approval = _APPROVALS_BY_ID.get(approval_id)
     if approval is None:
         approval = {
             "request_id": request_id,
@@ -102,7 +123,7 @@ def _upsert_pending_approval(
             "source_seq": source_seq,
             "updated_at": updated_at,
         }
-        _APPROVALS_BY_REQUEST_ID[request_id] = approval
+        _APPROVALS_BY_ID[approval_id] = approval
         return dict(approval), True
 
     if approval["status"] != "pending":
@@ -129,3 +150,37 @@ def _remote_id_from_event(event: Mapping[str, object]) -> str:
     if remote_id:
         return remote_id
     return str(event.get("remote", "")).strip()
+
+
+def _approval_id(remote_id: str, request_id: str) -> str:
+    return f"{remote_id}::{request_id}"
+
+
+def _resolve_approval(
+    request_id: str,
+    *,
+    remote_id: str | None = None,
+) -> dict[str, object] | None:
+    normalized_request_id = str(request_id).strip()
+    normalized_remote_id = str(remote_id or "").strip()
+
+    if normalized_remote_id:
+        return _APPROVALS_BY_ID.get(_approval_id(normalized_remote_id, normalized_request_id))
+
+    matches = [
+        approval
+        for approval in _APPROVALS_BY_ID.values()
+        if str(approval.get("request_id", "")).strip() == normalized_request_id
+    ]
+    if not matches:
+        return None
+    if len(matches) == 1:
+        return matches[0]
+
+    remote_ids = sorted(
+        {
+            str(approval.get("remote_id") or approval.get("remote") or "").strip()
+            for approval in matches
+        }
+    )
+    raise ApprovalLookupAmbiguousError(normalized_request_id, remote_ids)

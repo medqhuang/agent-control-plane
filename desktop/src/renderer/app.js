@@ -1,3 +1,4 @@
+import { renderRemoteList } from "./features/remotes/render-remote-list.js";
 import { renderApprovalList } from "./features/approvals/render-approval-list.js";
 import { renderSessionList } from "./features/sessions/render-session-list.js";
 import { createSnapshotStore } from "./state/snapshot-store.js";
@@ -10,6 +11,8 @@ const elements = {
   lastUpdated: document.querySelector("#last-updated"),
   errorMessage: document.querySelector("#error-message"),
   refreshButton: document.querySelector("#refresh-button"),
+  remoteCount: document.querySelector("#remote-count"),
+  serverList: document.querySelector("#server-list"),
   sessionCount: document.querySelector("#session-count"),
   approvalCount: document.querySelector("#approval-count"),
   sessionList: document.querySelector("#session-list"),
@@ -39,25 +42,31 @@ function updateStatusBadge(status) {
 }
 
 function renderApp(state) {
+  const servers = state.snapshot.servers;
   const approvals = state.snapshot.approvals;
   const sessions = state.snapshot.sessions;
   const pendingApprovals = approvals.filter(
     (approval) => approval.status === "pending",
   );
   const hasApprovalAction =
-    Object.keys(state.approvalActionByRequestId).length > 0;
+    Object.keys(state.approvalActionByKey).length > 0;
 
   elements.relayEndpoint.textContent = state.relayBaseUrl || "-";
   elements.lastUpdated.textContent = formatLastUpdated(state.lastUpdated);
+  elements.remoteCount.textContent = String(servers.length);
   elements.sessionCount.textContent = String(sessions.length);
   elements.approvalCount.textContent = String(pendingApprovals.length);
   elements.refreshButton.disabled =
     state.status === "loading" || hasApprovalAction;
 
   updateStatusBadge(state.status);
+  renderRemoteList(elements.serverList, servers, {
+    sessions,
+    approvals,
+  });
   renderSessionList(elements.sessionList, sessions);
   renderApprovalList(elements.approvalList, pendingApprovals, {
-    approvalActionByRequestId: state.approvalActionByRequestId,
+    approvalActionByKey: state.approvalActionByKey,
   });
 
   if (state.error) {
@@ -80,13 +89,17 @@ elements.approvalList.addEventListener("click", async (event) => {
     return;
   }
 
-  const { approvalDecision, requestId } = button.dataset;
+  const {
+    approvalDecision,
+    requestId,
+    remoteId = "",
+  } = button.dataset;
   if (!requestId || !approvalDecision) {
     return;
   }
 
   try {
-    await store.submitApprovalDecision(requestId, approvalDecision);
+    await store.submitApprovalDecision(requestId, remoteId, approvalDecision);
   } catch {
     // Store state already carries the error message for the UI.
   }

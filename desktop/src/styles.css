@@ -92,6 +92,11 @@ h2 {
   margin-bottom: 20px;
 }
 
+.remotes-panel {
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
 .status-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -180,12 +185,66 @@ h2 {
   margin: 0;
 }
 
+.server-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
 .list-item,
 .empty-state {
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   padding: 12px;
   background: #f8fafc;
+}
+
+.group-section {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.group-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.group-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.group-title {
+  font-weight: 600;
+}
+
+.group-subtitle {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.group-count-pill {
+  min-width: 48px;
+}
+
+.group-item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.group-item-list .list-item,
+.server-card {
+  background: #ffffff;
 }
 
 .item-title {
@@ -238,6 +297,10 @@ h2 {
 
 .empty-state {
   color: #6b7280;
+}
+
+.server-grid .empty-state {
+  grid-column: 1 / -1;
 }
 
 .list-item.is-busy {

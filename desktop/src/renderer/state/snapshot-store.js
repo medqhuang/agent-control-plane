@@ -1,4 +1,5 @@
 const EMPTY_SNAPSHOT = Object.freeze({
+  servers: [],
   sessions: [],
   approvals: [],
 });
@@ -6,15 +7,21 @@ const EMPTY_SNAPSHOT = Object.freeze({
 function normalizeSnapshot(snapshot) {
   if (!snapshot || typeof snapshot !== "object") {
     return {
+      servers: [],
       sessions: [],
       approvals: [],
     };
   }
 
   return {
+    servers: Array.isArray(snapshot.servers) ? snapshot.servers : [],
     sessions: Array.isArray(snapshot.sessions) ? snapshot.sessions : [],
     approvals: Array.isArray(snapshot.approvals) ? snapshot.approvals : [],
   };
+}
+
+function buildApprovalActionKey(requestId, remoteId = "") {
+  return `${String(remoteId || "").trim()}::${String(requestId || "").trim()}`;
 }
 
 function getConnectionStatusForRefreshError(error) {
@@ -42,7 +49,7 @@ export function createSnapshotStore() {
     status: "loading",
     error: null,
     lastUpdated: null,
-    approvalActionByRequestId: {},
+    approvalActionByKey: {},
   };
 
   function emit() {
@@ -59,11 +66,11 @@ export function createSnapshotStore() {
     emit();
   }
 
-  function clearApprovalAction(requestId) {
+  function clearApprovalAction(approvalKey) {
     const nextActions = {
-      ...state.approvalActionByRequestId,
+      ...state.approvalActionByKey,
     };
-    delete nextActions[requestId];
+    delete nextActions[approvalKey];
     return nextActions;
   }
 
@@ -104,23 +111,42 @@ export function createSnapshotStore() {
     return refreshPromise;
   }
 
-  async function submitApprovalDecision(requestId, decision) {
+  async function submitApprovalDecision(requestId, remoteId, decision) {
+    let nextRemoteId = remoteId;
+    let nextDecision = decision;
+    if (
+      nextDecision === undefined &&
+      (nextRemoteId === "approve" || nextRemoteId === "reject")
+    ) {
+      nextDecision = nextRemoteId;
+      nextRemoteId = "";
+    }
+
     if (!requestId) {
       throw new Error("approval request_id is required");
     }
 
-    if (decision !== "approve" && decision !== "reject") {
+    if (nextDecision !== "approve" && nextDecision !== "reject") {
       throw new Error("approval decision must be approve or reject");
     }
 
-    if (state.approvalActionByRequestId[requestId]) {
+    if (nextRemoteId !== undefined && typeof nextRemoteId !== "string") {
+      throw new Error("approval remote_id must be a string when provided");
+    }
+
+    const normalizedRemoteId = typeof nextRemoteId === "string"
+      ? nextRemoteId.trim()
+      : "";
+    const approvalKey = buildApprovalActionKey(requestId, normalizedRemoteId);
+
+    if (state.approvalActionByKey[approvalKey]) {
       return null;
     }
 
     setState({
-      approvalActionByRequestId: {
-        ...state.approvalActionByRequestId,
-        [requestId]: decision,
+      approvalActionByKey: {
+        ...state.approvalActionByKey,
+        [approvalKey]: nextDecision,
       },
       error: null,
     });
@@ -128,18 +154,19 @@ export function createSnapshotStore() {
     try {
       const payload = await window.desktopApi.submitApprovalDecision({
         requestId,
-        decision,
+        remoteId: normalizedRemoteId,
+        decision: nextDecision,
       });
 
       setState({
-        approvalActionByRequestId: clearApprovalAction(requestId),
+        approvalActionByKey: clearApprovalAction(approvalKey),
         error: null,
       });
       await refresh();
       return payload;
     } catch (error) {
       setState({
-        approvalActionByRequestId: clearApprovalAction(requestId),
+        approvalActionByKey: clearApprovalAction(approvalKey),
         error: error instanceof Error ? error.message : String(error),
       });
       throw error;

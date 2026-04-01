@@ -13,10 +13,10 @@
     <div class="app-shell">
       <header class="topbar">
         <div>
-          <p class="eyebrow">P3 Local Control MVP</p>
+          <p class="eyebrow">P5 Multi-Remote</p>
           <h1>Agent Control Plane</h1>
           <p class="subtitle">
-            Electron shell with a single relay snapshot reader.
+            Electron shell aggregating relay snapshot data across multiple remotes.
           </p>
         </div>
         <button id="refresh-button" class="refresh-button" type="button">
@@ -42,11 +42,22 @@
         <p id="error-message" class="error-message" hidden></p>
       </section>
 
+      <section class="panel remotes-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Relay Registry</p>
+            <h2>Remotes</h2>
+          </div>
+          <p id="remote-count" class="count-pill">0</p>
+        </div>
+        <ul id="server-list" class="item-list server-grid"></ul>
+      </section>
+
       <main class="content-grid">
         <section class="panel">
           <div class="panel-header">
             <div>
-              <p class="eyebrow">Future Feature Slot</p>
+              <p class="eyebrow">Grouped by Remote</p>
               <h2>Sessions</h2>
             </div>
             <p id="session-count" class="count-pill">0</p>
@@ -57,7 +68,7 @@
         <section class="panel">
           <div class="panel-header">
             <div>
-              <p class="eyebrow">Future Feature Slot</p>
+              <p class="eyebrow">Grouped by Remote</p>
               <h2>Approvals</h2>
             </div>
             <p id="approval-count" class="count-pill">0</p>

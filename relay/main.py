@@ -10,6 +10,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel
 from pydantic import Field
 
+from relay.approval_store import ApprovalLookupAmbiguousError
 from relay.approval_store import apply_decision
 from relay.approval_store import get_approval
 from relay.approval_store import get_status_for_decision
@@ -45,6 +46,7 @@ _APPROVAL_RESPONSE_LOCK = Lock()
 
 class ApprovalResponseRequest(BaseModel):
     request_id: str
+    remote_id: str = ""
     decision: Literal["approve", "reject"]
     feedback: str = ""
 
@@ -137,7 +139,18 @@ def post_approval_response(
     payload: ApprovalResponseRequest,
 ) -> dict[str, object]:
     with _APPROVAL_RESPONSE_LOCK:
-        approval = get_approval(payload.request_id)
+        target_remote_id = payload.remote_id.strip() or None
+        try:
+            approval = get_approval(payload.request_id, remote_id=target_remote_id)
+        except ApprovalLookupAmbiguousError as exc:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "message": "approval request_id is ambiguous across multiple remotes; provide remote_id",
+                    "request_id": exc.request_id,
+                    "remote_ids": exc.remote_ids,
+                },
+            ) from exc
         if approval is None:
             raise HTTPException(status_code=404, detail="approval request not found")
 
@@ -145,7 +158,7 @@ def post_approval_response(
         if is_terminal_status(approval["status"]):
             if approval["status"] == target_status:
                 return {
-                    "approval": approval,
+                    "approval": enrich_approval(approval),
                     "event": None,
                     "idempotent": True,
                     "message": "decision already applied",
@@ -157,6 +170,7 @@ def post_approval_response(
                 detail={
                     "message": "approval request already finalized with a different decision",
                     "request_id": approval["request_id"],
+                    "remote_id": approval.get("remote_id", ""),
                     "current_status": approval["status"],
                     "attempted_decision": payload.decision,
                 },
@@ -204,7 +218,11 @@ def post_approval_response(
                 },
             ) from exc
 
-        approval = apply_decision(payload.request_id, payload.decision)
+        approval = apply_decision(
+            payload.request_id,
+            payload.decision,
+            remote_id=remote_id or None,
+        )
         session = sync_session_status_from_approval(
             session_id=approval["session_id"],
             approval_status=approval["status"],
