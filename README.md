@@ -7,10 +7,10 @@
 ## 项目状态
 
 - 已完成阶段：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`
-- 已完成子阶段：`P4.5-A Relay Integration`
+- 已完成子阶段：`P4.5-A Relay Integration`、`P4.5-B Session CLI`、`P4.5-C Hosted Session Contract`
 - 当前阶段：`P4.5 Hosted Session Usability`
-- 当前节点：`P4.5-B Session CLI`
-- 下一节点：`P4.5-C Hosted Session Contract`
+- 当前节点：`P4.5-D Recovery Contract`
+- 下一节点：`P5 Multi-Remote`
 - 下一阶段：`P5 Multi-Remote`
 - `V1` 主线：`Kimi` + `remote-agent` + `Multi-Remote` + `Codex`
 - `V2` 计划：`Claude Code`
@@ -26,16 +26,15 @@
 
 当前优先事项：
 
-- 完成 `P4.5-B Session CLI`
-- 明确 `P4.5-C Hosted Session Contract`
 - 明确 `P4.5-D Recovery Contract`
+- 保持 hosted session CLI 与 contract 表述一致
 - 保持现有 `relay`、approval 幂等规则和本地控制端 MVP 不回退
 
 ## 项目目标
 
-本项目不以聊天 UI 或推理链可视化为目标。
+本项目当前不以聊天 UI 或推理链可视化作为主目标。
 
-本项目聚焦解决远程 AI 编码工作流中的控制面问题：
+当前版本聚焦解决远程 AI 编码工作流中的控制面问题：
 
 - 多个 remote 上存在多个 agent session
 - 不同 CLI 的事件模型和审批机制不一致
@@ -106,6 +105,8 @@ flowchart LR
 - `relay`：负责本地聚合状态、approval 队列、snapshot 与一致性规则
 - `remote-agent`：负责远端 session 生命周期、provider 原生接入和 approval writeback
 - provider 相关的脆弱实现细节应尽量保留在远端，而不是留在本地主链路
+- `remote-agent` 直接连接 provider worker；`relay` 仅承载本地控制面所需的状态聚合、审批信令与事件转发，不代理 provider 原始模型数据流
+- 恢复与检查点能力将建立在现有 `session registry / state store` 上扩展，而不是引入新的顶层控制面架构
 
 已确定的架构方向：
 
@@ -139,6 +140,7 @@ flowchart LR
 - `remote-agent serve`
 - 远端 `systemctl --user` 长驻运行
 - `remote-agent kimi start --task "..."` 通过 `kimi --wire` 启动 hosted session
+- `remote-agent sessions / watch / reply / stop`
 - `remote-agent -> relay` 标准事件上报
 - `relay -> remote-agent -> kimi --wire` 的 approval decision / writeback 主链路
 - 本地控制端 `desktop/`
@@ -165,14 +167,23 @@ flowchart LR
 
 当前 hosted-session 主链路的剩余缺口主要在：
 
-- `remote-agent sessions / watch / reply / stop` 仍未补齐
-- Hosted session contract 尚未正式写清
-- Recovery contract 尚未正式写清
+- `attach` 尚未实现
+- Recovery 实现尚未正式落地
+
+当前 hosted session 的已知边界包括：
+
+- `sessions` 仅展示当前 `remote-agent` 进程内仍托管的 session，不是持久化历史视图
+- `watch` 当前是单次读取最新状态，不是持续 follow
+- `reply` 当前是非 `attach` 模式下对已托管 session 追加一轮输入
+- `stop` 当前只允许用于非运行中、且不处于 `approval_pending` 的 session
+- `approval_pending` 下拒绝 `stop`，以避免远端托管状态与 `relay` 的 pending approval 语义分叉
+- `attach` 当前未实现，不应表述为已支持
 
 当前恢复能力仍存在明确缺口：
 
-- `remote-agent` 的自动复活与重连恢复尚未完成
-- 控制平面状态恢复与 provider 运行时恢复尚未正式落地
+- `remote-agent` 目前只有“服务可通过 `systemctl --user` 复活”的能力，还没有“进程重启后自动恢复 hosted session 内存态”的能力
+- `relay` 当前仍是 in-memory store；重启后不会自动恢复已有 session / pending approvals / control metadata
+- 当前还没有正式的 checkpoint 持久化、pending approvals replay 或控制面事件 replay
 - 后续将“可恢复控制面”作为明确目标；provider 原始执行现场恢复将按各 provider 能力分别处理
 
 ## 平台策略
@@ -218,12 +229,11 @@ flowchart LR
 
 `当前推荐节点`
 
-- `P4.5-B` Session CLI
+- `P4.5-D` Recovery Contract
 
 `下一节点`
 
-- `P4.5-C` Hosted Session Contract
-- `P4.5-D` Recovery Contract
+- `P5` Multi-Remote
 
 `P4.5` 用于将托管 session 从“已经具备 foundation”补到“可以日常使用”的最小闭环，重点包括：
 
@@ -236,9 +246,39 @@ flowchart LR
 - 增强交互入口：
   - `remote-agent attach <session_id>`
 - 最小恢复契约：
+  - Local Desktop 断开后的 session 存活语义
+  - 最小 checkpoint 保存与恢复语义
+  - pending approvals 与控制面事件 replay 语义
   - 服务复活
   - 控制面状态恢复
   - provider 恢复边界说明
+
+当前 hosted session contract 约定如下：
+
+- `remote-agent kimi start --task "..."` 的语义是创建后台托管 session；命令本身只等待首个 checkpoint，达到“本轮完成”或“出现 approval”后返回，不把后续 session 绑定在当前 shell
+- `remote-agent sessions` 展示的是当前 `remote-agent` runtime 内的托管 session 列表，不是历史记录
+- `remote-agent watch <session_id>` 当前是单次读取最新状态，不是持续 follow；需要刷新时应再次执行命令
+- `remote-agent reply <session_id> --message "..."` 是非 `attach` 模式下对同一 hosted session 追加一轮输入
+- `remote-agent stop <session_id>` 当前终止 hosted session，并将其从当前 runtime 列表中移除；停止后该 session 不再出现在 `sessions` 中，`watch` 会返回未找到
+- `remote-agent stop <session_id>` 当前不支持在 `approval_pending` 下执行，也不支持在一轮 turn 正在运行时执行
+- `remote-agent attach <session_id>` 当前未实现；文档和实现都不应把它表述为已支持能力
+
+当前 recovery contract 约定如下：
+
+- 必须明确区分三层能力：
+  - 服务复活：`systemd --user` 将 `remote-agent serve` 重新拉起
+  - 控制面状态恢复：session / approval / snapshot / 事件视图被重新建立
+  - provider 执行现场恢复：provider 子进程原执行现场被继续、重接或恢复
+- Local Desktop 断开、关闭或崩溃后，远端 hosted session 的当前存活语义是：只要远端 `remote-agent serve` 与其 provider 子进程仍存活，session 继续运行；Desktop 不是 session 宿主
+- Local Desktop 重新打开后的当前承诺是：它只能重新连接 `relay` 并读取 `relay` 当下仍持有的 snapshot；Desktop 自身不持有 hosted session，也不负责 provider 现场恢复
+- `online / offline / awaiting_reconnect` 是 recovery 目标契约里的状态词汇，不是当前已经稳定暴露的 snapshot 字段；当前文档不能把它们写成既有 API
+- 最小 checkpoint 结构当前是目标契约，不是现有持久化实现；后续至少应包含：最近会话上下文、当前工作目录、待审批项、时间戳、客户端连接标识
+- pending approvals 的当前语义是：`request_id` 继续作为唯一标识，但 pending 状态只存在于当前 `relay` 内存态与 `remote-agent` 进程内存态；任一侧重启后都没有自动恢复或 replay 承诺
+- 控制面事件的当前语义是：`remote-agent` 只向 `relay` 发送实时标准事件，事件带顺序信息，但当前没有持久化 event buffer，也没有跨重启 replay 机制
+- `remote-agent` 服务复活后的当前承诺仅限于：服务可被重新拉起并重新接受新请求；当前不承诺恢复此前 hosted session、`request_id -> session_id` 映射、pending approvals 或 provider 子进程现场
+- `relay` 重启后的当前承诺仅限于：重新开始接收新的 session / approval / event；当前不承诺从自身恢复旧 snapshot，也不承诺自动向远端拉取历史状态
+- provider 子进程异常退出后的当前边界是：远端 hosted session 可能失败或消失；当前不承诺对 Kimi 原始执行现场做完整 `resume / reattach`
+- 项目当前明确不把“服务能起来”表述成“控制面状态已恢复”或“provider 执行现场一定完整恢复”
 
 `V1 后续`
 

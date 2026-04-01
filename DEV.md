@@ -32,20 +32,61 @@
 - 核心层不得写死 Windows 路径、PowerShell 或 Windows/macOS 专属 API
 - 本地控制端不是远端 session 的生存依赖
 - 远端 `remote-agent` 必须作为托管 session 的真实运行宿主
+- `remote-agent` 直接连接 provider worker；`relay` 不代理 provider 原始模型数据流，只处理控制面状态、审批信令与事件转发
 - 本地控制端关闭后，远端 session 应继续运行；本地恢复后应支持重新连接
 - `remote-agent` 被终止后，优先保证“服务复活 + 控制面状态恢复”，而不是笼统承诺 provider 执行现场完整恢复
+- 恢复能力优先建立在现有 `session registry / state store` 上扩展，不新增独立顶层架构
+- 必须明确区分三层能力：服务复活、控制面状态恢复、provider 执行现场恢复；文档与实现都不能混写
 
 ## 当前阶段
 
 当前项目状态：
 
-- 已完成：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5-A`
+- 已完成：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5-A`、`P4.5-B`、`P4.5-C`
 - 当前阶段：`P4.5 Hosted Session Usability`
-- 当前节点：`P4.5-B Session CLI`
-- 下一节点：`P4.5-C Hosted Session Contract`
+- 当前节点：`P4.5-D Recovery Contract`
+- 下一节点：`P5 Multi-Remote`
 - `V1` 暂不接入 `Claude Code`
 
-当前主线不是继续扩展旧 bridge，也不是提前进入 `P5`，而是继续完成 `P4.5` 的 hosted-session usability 闭环。
+当前主线不是继续扩展旧 bridge，也不是提前进入 `P5`，而是先收口 `P4.5-D Recovery Contract`，再进入 `P5 Multi-Remote`。
+当前阶段也不以实时聊天 UI 或推理链可视化作为主目标；后续实时会话控制属于平台增强能力，不改变控制平面的产品定位。
+
+## 当前融合原则
+
+当前阶段吸收的恢复、审批缓冲与检查点思路，必须遵循以下原则：
+
+- 不改动既有托管平台顶层架构：`desktop -> relay -> remote-agent -> provider native interface`
+- 不引入新的顶层控制面服务；状态与恢复能力在现有 `session registry / state store` 上扩展
+- `remote-agent` 继续作为远端运行宿主；`relay` 继续作为本地控制面聚合层
+- `relay` 不代理 provider 原始模型数据流，只维护控制面所需的状态、审批与事件回放能力
+- 不在公开文档中引用泄露源码作为正式依据；仅吸收可独立成立的工程模式，如 checkpoint、approval queue、event replay 与恢复边界
+
+## 当前阶段源码参考顺序
+
+当前阶段允许并要求参考源码，但参考顺序必须固定，避免执行时被外部实现带偏：
+
+1. 当前仓库源码
+   - 优先阅读 `relay/`、`desktop/`、`remote-agent/`
+   - 所有实现必须先适配现有托管平台链路，而不是先套外部项目结构
+2. 官方公开接口与公开源码
+   - `Kimi -> kimi --wire`
+   - `Codex -> codex app-server`
+   - `Claude Code -> CLI / SDK / hooks`
+3. 本地参考源码
+   - `references/claude-code-haha-main/`
+   - 当前只用于参考 checkpoint、approval、bridge messaging、state restore、event replay 等实现模式
+4. 其他成熟开源项目源码
+   - 只用于补充结构与工程实现手法，不改变当前阶段顺序
+
+当前阶段对 Claude Code 源码的使用边界：
+
+- 允许将 `references/claude-code-haha-main/src/QueryEngine.ts`
+  、`references/claude-code-haha-main/src/Tool.ts`
+  、`references/claude-code-haha-main/src/bootstrap/state.ts`
+  与 `references/claude-code-haha-main/src/bridge/` 作为 `P4.5-D` 与 `P8` 的实现参考
+- 当前不因为本地已有 Claude Code 源码而提前进入 `Claude Code Support`
+- 当前不因为本地已有 Claude Code 源码而改变 `P4.5-D -> P5 -> P6/P7/P8` 的阶段顺序
+- 当前不将 Claude 的内部实现细节直接抽象成项目的顶层架构
 
 ## 当前稳定基线
 
@@ -119,8 +160,9 @@ provider 原生接入策略固定如下：
 - `已完成`：`P3` 本地控制端 MVP
 - `已完成`：`P4` Remote-Agent Foundation
 - `已完成`：`P4.5-A` Relay Integration
-- `当前`：`P4.5-B` Session CLI
-- `下一步`：`P4.5-C` Hosted Session Contract
+- `已完成`：`P4.5-B` Session CLI
+- `已完成`：`P4.5-C` Hosted Session Contract
+- `当前`：`P4.5-D` Recovery Contract
 - `后续`：`P5` Multi-Remote
 - `后续`：`P6` 跨平台清理
 - `后续`：`P7` Codex Support
@@ -213,7 +255,7 @@ remote-agent kimi start --task "重构 auth 模块"
 
 ### 设立原因
 
-当前 `P4` 的重点是远端执行边界迁移，本身仍在进行中。
+`P4` 已完成远端执行边界迁移。
 
 `P4.5` 仅承接那些不应再塞回 `P4`，但又不能直接跳到 `P5 Multi-Remote` 的工作：
 
@@ -246,7 +288,7 @@ remote-agent kimi start --task "重构 auth 模块"
 
 状态：
 
-- 当前推荐节点
+- 已完成
 
 目标：
 
@@ -267,7 +309,7 @@ remote-agent kimi start --task "重构 auth 模块"
 
 状态：
 
-- 下一节点
+- 已完成
 
 目标：
 
@@ -275,16 +317,29 @@ remote-agent kimi start --task "重构 auth 模块"
 
 最小交付：
 
-- `start` 是后台托管语义，不占用当前 shell
-- `watch` 是只读观察语义
-- `attach` 是重新接回交互语义
-- `reply` 是非 attach 模式下的追加输入语义
+- `start` 是后台托管语义；命令本身只等待首个 checkpoint，达到“本轮完成”或“出现 approval”后返回
+- `sessions` 是当前 `remote-agent` runtime 内的托管 session 列表视图
+- `watch` 当前是单次读取最新状态，不是持续 follow
+- `reply` 是非 `attach` 模式下的追加输入语义
+- `stop` 当前终止 hosted session，并将其从当前 runtime 列表中移除
+- `stop` 当前不支持在 `approval_pending` 或 turn 进行中执行
+- `attach` 当前未实现，不能写成已支持
+
+当前 contract 固定口径：
+
+- `remote-agent kimi start --task "..."` 创建的是 hosted session；命令返回后，后续 session 生命周期由 `remote-agent serve` 托管，而不是由当前 shell 持有
+- `remote-agent sessions` 只列当前 `remote-agent` 进程还在托管的 session；它不是 relay 历史视图，也不是持久化恢复视图
+- `remote-agent watch <session_id>` 当前是单次读取，不负责持续流式跟随输出；如需刷新，重复执行即可
+- `remote-agent reply <session_id> --message "..."` 在同一 hosted session 上追加一轮输入；它不是重新 attach TTY，也不是新的独立 session
+- `remote-agent stop <session_id>` 当前只在 session 空闲时可用；若 session 正在等待审批或正在执行 turn，命令应明确拒绝
+- `approval_pending` 下拒绝 `stop` 的原因是：当前实现优先保持 hosted runtime 与 `relay` 上 pending approval 语义一致，避免本地出现仍可审批、远端却已被强停的分叉状态
+- `remote-agent attach <session_id>` 当前未实现；如果文档需要提到它，只能作为未来增强入口，不能写成当前可用命令
 
 #### P4.5-D Recovery Contract
 
 状态：
 
-- 待 `P4.5-C` 后继续推进
+- 当前推荐节点
 
 目标：
 
@@ -292,10 +347,27 @@ remote-agent kimi start --task "重构 auth 模块"
 
 最小交付：
 
+- Local Desktop 断开后，远端 `remote-agent` 与 hosted session 的存活语义
+- `awaiting_reconnect / online / offline` 等恢复状态约定
+- 最小 checkpoint 结构约定：最近会话上下文、当前工作目录、待审批项、时间戳、客户端连接标识
+- pending approvals 与控制面事件 replay 约定
 - 服务复活语义
 - 控制面状态恢复语义
 - provider 运行时恢复边界
 - “服务可复活”不等于“执行现场必然完整恢复”
+
+当前 recovery contract 固定口径：
+
+- Local Desktop 断开、关闭或崩溃后，只要远端 `remote-agent serve` 与其 provider 子进程仍存活，hosted session 就继续运行；Desktop 不是 session 宿主
+- Local Desktop 重新打开后的当前承诺，仅是重新连接 `relay` 并读取 `relay` 当下仍持有的 snapshot；Desktop 自身不持有 hosted session，也不负责 provider 执行现场恢复
+- `online / offline / awaiting_reconnect` 当前只作为目标 recovery 状态词汇存在，不是当前已经稳定暴露的 snapshot 字段；文档不能把它们写成既有 API
+- 最小 checkpoint 当前是目标契约，不是现有持久化实现；后续至少应包含：最近会话上下文、当前工作目录、待审批项、时间戳、客户端连接标识
+- pending approvals 当前继续使用 `request_id`；但 pending 状态目前只存在于 `relay` 内存态与 `remote-agent` 进程内存态，重启后没有自动恢复或 replay 承诺
+- 控制面事件当前只保证 live 上报与顺序信息；当前没有持久化 event buffer，也没有跨重启 replay 机制
+- `remote-agent` 服务复活后的当前承诺仅限于：服务可重新拉起并接受新请求；当前不承诺恢复此前 hosted session、`request_id -> session_id` 映射、pending approvals 或 provider 子进程现场
+- `relay` 重启后的当前承诺仅限于：重新开始接收新的 session / approval / event；当前不承诺恢复旧 snapshot，也不承诺自动向远端补拉历史状态
+- provider 子进程异常退出后的当前边界是：hosted session 可能失败或消失；当前不承诺对 provider 原始执行现场做完整 `resume / reattach`
+- 当前必须避免三层能力混写：服务可复活，不等于控制面状态已恢复；控制面状态可恢复，也不等于 provider 执行现场一定完整恢复
 
 ### 范围
 
@@ -310,6 +382,10 @@ remote-agent kimi start --task "重构 auth 模块"
 - 视情况补齐：
   - `remote-agent attach <session_id>`
 - 明确最小恢复契约：
+  - Local Desktop 断开后的 session 存活规则
+  - checkpoint 保存与恢复规则
+  - pending approvals 回放规则
+  - 控制面事件 replay 规则
   - 服务复活
   - 控制面状态恢复
   - provider 恢复边界
@@ -319,6 +395,8 @@ remote-agent kimi start --task "重构 auth 模块"
 - Multi-Remote
 - Codex
 - Claude
+- 多设备切换
+- 手机只读/审批端
 - tray/menu bar
 - 大规模 desktop 重构
 - 完整持久化系统
@@ -430,6 +508,10 @@ remote-agent kimi start --task "重构 auth 模块"
 - stale request 保护
 - 更清晰的日志
 - 最小持久化
+- checkpoint 持久化与恢复
+- pending approvals 持久化与 replay
+- 控制面事件缓冲与 replay
+- 高风险操作的轻量 risk scoring
 - `remote-agent` 重启恢复
 - 本地控制端关闭后的重连恢复
 - 重新枚举 active sessions 与 pending approvals
@@ -455,6 +537,7 @@ remote-agent kimi start --task "重构 auth 模块"
 - `V1` 更需要先收稳 `remote-agent` 与 `Multi-Remote`
 - `Kimi` 与 `Codex` 更适合当前控制平面主线
 - `Claude Code` 的最佳接入面更偏 `CLI / SDK + hooks`，适合作为第二阶段扩展
+- 即使本地已放入 Claude Code 源码，也只作为 `V2` 设计参考，不改变当前 `P4.5-D -> P5 -> P6/P7/P8` 的阶段顺序
 
 ## Agent 分配建议
 
@@ -482,6 +565,13 @@ remote-agent kimi start --task "重构 auth 模块"
 - 再做 `P4.5-C Hosted Session Contract`
 - 最后做 `P4.5-D Recovery Contract`
 
+当前进度口径：
+
+- `P4.5-A` 已完成
+- `P4.5-B` 已完成
+- `P4.5-C` 已完成
+- 当前继续推进 `P4.5-D`
+
 ## Agent 任务模板
 
 推荐模板：
@@ -490,53 +580,70 @@ remote-agent kimi start --task "重构 auth 模块"
 当前阶段：P4.5 Hosted Session Usability
 
 当前子目标：
-P4.5-B Session CLI
+P4.5-D Recovery Contract
 
 当前目标：
-补齐远端 shell 下对 hosted session 的最小可用管理入口，让用户不只会 start，还能列出、观察、回复和停止已托管 session。
+把 hosted session 的最小恢复契约正式写清，覆盖本地控制端断开、remote-agent 重启、checkpoint、pending approvals 和控制面事件 replay 的边界，避免把“服务可复活”“控制面可恢复”“provider 执行现场完整恢复”混为一谈。
 
 当前前提：
-- remote-agent serve 已可通过 systemctl --user 长驻运行
-- remote-agent kimi start --task "..." 已走 kimi --wire
-- remote-agent -> relay -> approval-response -> remote-agent -> kimi 的最小闭环已成立
-- 这一步只做 session CLI，不做 Multi-Remote，不做 Codex，不做 desktop 新功能
+- P4 已完成
+- P4.5-A Relay Integration 已完成
+- P4.5-B Session CLI 已完成，其中 reply 已是硬要求且已实现
+- P4.5-C Hosted Session Contract 已完成
+- 这一步以 recovery contract 明确为主，不做大规模恢复实现扩张
 
 这次只做：
-- 实现最小 session CLI：
-  - remote-agent sessions
-  - remote-agent watch <session_id>
-  - remote-agent reply <session_id> --message "..."
-  - remote-agent stop <session_id>
-- 如果实现成本合适，可补：
-  - remote-agent attach <session_id>
-  但 attach 不是这一步的硬要求
-- 让这些命令面向 hosted session 工作，而不是一次性 worker
-- 保持 provider-specific 细节尽量留在 remote-agent 内
-- 保持命令输出适合远端 shell 日常使用
-- 保持现有 relay / approval / decision 主链路不回退
+- 在 README.md、DEV.md、remote-agent/README.md 中明确 recovery contract
+- 至少写清以下内容：
+  - Local Desktop 断开或关闭后，远端 hosted session 的当前存活语义
+  - 恢复状态约定，例如：
+    - online
+    - offline
+    - awaiting_reconnect
+    如果当前未实现状态字段，要明确写成“目标契约”还是“当前既有状态”
+  - 最小 checkpoint 结构约定，至少说明应包含哪些信息：
+    - 最近会话上下文
+    - 当前工作目录
+    - 待审批项
+    - 时间戳
+    - 客户端连接标识
+  - pending approvals 的恢复与 replay 语义
+  - 控制面事件 replay 语义
+  - remote-agent 服务复活后的当前承诺
+  - relay / desktop 重启后的当前承诺
+  - provider 执行现场恢复边界；明确哪些不承诺
+- 明确区分三层能力：
+  - 服务复活
+  - 控制面状态恢复
+  - provider 执行现场恢复
+- 保持文档口径与当前实现一致，不把未实现能力写成已具备
+- 同步修正 DEV.md 里当前还停在旧 P4.5-B 的 Agent 任务模板，使其与当前 P4.5-D 一致
 
 这次不要做：
 - Multi-Remote
 - Codex
-- Claude
-- desktop 重构
-- 持久化重构
-- 大规模 UI / 文档改写
-- 回退去扩展旧 bridge
+- Claude Code 接入
+- desktop 新功能
+- 持久化实现
+- 完整 reconnect / resume / replay 系统实现
+- 为了写 contract 而偷偷扩张代码
+- 把 Claude Code 内部结构直接搬成当前项目架构
 
 允许修改：
-- remote-agent/
-- 如确有必要，可补 remote-agent/README.md 的最小使用说明
+- README.md
+- DEV.md
+- remote-agent/README.md
+- 如确有必要，可补极少量注释
+- 可补当天日志
 
 完成标准：
-- 用户可以在远端 shell 里列出已托管 session
-- 用户可以观察指定 session 的最新状态
-- 用户可以对 hosted session 发送 reply
-- 用户可以停止指定 session
-- 告诉我你新增/修改了哪些文件
-- 告诉我每个命令的实际用法
-- 告诉我如何验证 sessions / watch / reply / stop 这四条路径
-- 如果 attach 暂不做，明确说明原因，不要顺手扩张范围
+- recovery contract 在三份文档里口径一致
+- 明确写清 Local Desktop 断开、remote-agent 重启、relay 重启、provider 子进程异常退出时的当前边界
+- 明确写清 checkpoint / pending approvals / 控制面事件 replay 的最小契约
+- 不再把“服务能起来”表述成“执行现场一定能完整恢复”
+- DEV.md 的 Agent 任务模板已同步到当前 P4.5-D
+- 告诉我你修改了哪些文件
+- 告诉我最终 recovery contract 的核心条目
 ```
 
 ## 当前常用命令
@@ -566,4 +673,4 @@ npm start
 
 ## 总结
 
-`P0-P4` 与 `P4.5-A` 已完成。当前应优先完成 `P4.5-B Session CLI`，随后进入 `P4.5-C Hosted Session Contract` 与 `P4.5-D Recovery Contract`。在 `P4.5` 完成之前，不进入 `P5 Multi-Remote`，也不回退既有 `relay`、desktop MVP 和 approval 一致性规则。
+`P0-P4`、`P4.5-A`、`P4.5-B` 与 `P4.5-C` 已完成。当前应优先完成 `P4.5-D Recovery Contract`。在 `P4.5` 完成之前，不进入 `P5 Multi-Remote`，也不回退既有 `relay`、desktop MVP 和 approval 一致性规则。

@@ -9,6 +9,7 @@ from remote_agent import __version__
 from remote_agent.providers.kimi.host import ApprovalNotPendingError
 from remote_agent.providers.kimi.host import HostedKimiSession
 from remote_agent.providers.kimi.host import KimiWritebackError
+from remote_agent.providers.kimi.host import SessionOperationError
 from remote_agent.relay.client import RelayReporter
 
 
@@ -54,6 +55,7 @@ class SupervisorRuntime:
                 "runtime_endpoint": "/v1/runtime",
                 "start_endpoint": "/v1/kimi/start",
                 "approval_endpoint": "/v1/approval-response",
+                "sessions_endpoint": "/v1/sessions",
             },
         }
 
@@ -77,7 +79,7 @@ class SupervisorRuntime:
         )
         self.sessions_by_id[session.session_id] = session
         result = await session.start()
-        if str(result.get("session", {}).get("state")) != "approval_pending":
+        if not bool(result.get("accepted", False)):
             self._drop_session(session.session_id)
         return result
 
@@ -105,6 +107,41 @@ class SupervisorRuntime:
             feedback=feedback,
         )
 
+    def list_sessions(self) -> dict[str, object]:
+        sessions = sorted(
+            (session.summary() for session in self.sessions_by_id.values()),
+            key=lambda item: str(item.get("updated_at", "")),
+            reverse=True,
+        )
+        return {
+            "type": "session_list",
+            "count": len(sessions),
+            "sessions": sessions,
+        }
+
+    def get_session(self, session_id: str) -> dict[str, object]:
+        session = self.sessions_by_id.get(session_id)
+        if session is None:
+            raise LookupError(f"session {session_id} not found")
+        return session.detail()
+
+    async def reply_to_session(
+        self,
+        *,
+        session_id: str,
+        message: str,
+    ) -> dict[str, object]:
+        session = self.sessions_by_id.get(session_id)
+        if session is None:
+            raise LookupError(f"session {session_id} not found")
+        return await session.reply(message=message)
+
+    async def stop_session(self, *, session_id: str) -> dict[str, object]:
+        session = self.sessions_by_id.get(session_id)
+        if session is None:
+            raise LookupError(f"session {session_id} not found")
+        return await session.stop()
+
     def _register_pending_approval(self, request_id: str, session_id: str) -> None:
         self.session_id_by_request_id[request_id] = session_id
 
@@ -125,5 +162,6 @@ class SupervisorRuntime:
 __all__ = [
     "ApprovalNotPendingError",
     "KimiWritebackError",
+    "SessionOperationError",
     "SupervisorRuntime",
 ]

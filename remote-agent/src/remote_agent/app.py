@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from remote_agent import __version__
 from remote_agent.supervisor import ApprovalNotPendingError
 from remote_agent.supervisor import KimiWritebackError
+from remote_agent.supervisor import SessionOperationError
 from remote_agent.supervisor import SupervisorRuntime
 
 
@@ -25,6 +26,10 @@ class ApprovalResponseRequest(BaseModel):
     request_id: str
     decision: Literal["approve", "reject"]
     feedback: str = ""
+
+
+class SessionReplyRequest(BaseModel):
+    message: str
 
 
 def create_app(runtime: SupervisorRuntime | None = None) -> FastAPI:
@@ -77,5 +82,40 @@ def create_app(runtime: SupervisorRuntime | None = None) -> FastAPI:
             "decision": payload.decision,
             "provider_writeback": writeback,
         }
+
+    @app.get("/v1/sessions")
+    async def get_sessions() -> dict[str, object]:
+        return runtime.list_sessions()
+
+    @app.get("/v1/sessions/{session_id}")
+    async def get_session(session_id: str) -> dict[str, object]:
+        try:
+            return runtime.get_session(session_id)
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.post("/v1/sessions/{session_id}/reply")
+    async def post_session_reply(
+        session_id: str,
+        payload: SessionReplyRequest,
+    ) -> dict[str, object]:
+        try:
+            return await runtime.reply_to_session(
+                session_id=session_id,
+                message=payload.message,
+            )
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except SessionOperationError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @app.post("/v1/sessions/{session_id}/stop")
+    async def post_session_stop(session_id: str) -> dict[str, object]:
+        try:
+            return await runtime.stop_session(session_id=session_id)
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except SessionOperationError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     return app

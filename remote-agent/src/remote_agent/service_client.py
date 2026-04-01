@@ -22,20 +22,57 @@ def default_service_base_url() -> str:
     return f"http://{host}:{port}"
 
 
-def post_json(
+def get_json(
     *,
     path: str,
-    payload: dict[str, object],
     base_url: str | None = None,
     timeout_seconds: float = 10.0,
 ) -> dict[str, object]:
+    return _request_json(
+        method="GET",
+        path=path,
+        payload=None,
+        base_url=base_url,
+        timeout_seconds=timeout_seconds,
+    )
+
+
+def post_json(
+    *,
+    path: str,
+    payload: dict[str, object] | None,
+    base_url: str | None = None,
+    timeout_seconds: float = 10.0,
+) -> dict[str, object]:
+    return _request_json(
+        method="POST",
+        path=path,
+        payload=payload,
+        base_url=base_url,
+        timeout_seconds=timeout_seconds,
+    )
+
+
+def _request_json(
+    *,
+    method: str,
+    path: str,
+    payload: dict[str, object] | None,
+    base_url: str | None,
+    timeout_seconds: float,
+) -> dict[str, object]:
     normalized_base_url = (base_url or default_service_base_url()).rstrip("/")
-    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    body = None
+    headers: dict[str, str] = {}
+    if payload is not None:
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+
     service_request = request.Request(
         normalized_base_url + path,
         data=body,
-        headers={"Content-Type": "application/json"},
-        method="POST",
+        headers=headers,
+        method=method,
     )
     opener = request.build_opener(request.ProxyHandler({}))
     try:

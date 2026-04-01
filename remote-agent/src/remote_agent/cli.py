@@ -12,6 +12,7 @@ from remote_agent.app import create_app
 from remote_agent.output import print_json
 from remote_agent.service_client import RemoteAgentServiceError
 from remote_agent.service_client import default_service_base_url
+from remote_agent.service_client import get_json
 from remote_agent.service_client import post_json
 from remote_agent.supervisor import SupervisorRuntime
 
@@ -42,6 +43,42 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["critical", "error", "warning", "info", "debug", "trace"],
     )
     serve_parser.set_defaults(handler=_handle_serve)
+
+    sessions_parser = subparsers.add_parser(
+        "sessions",
+        help="list hosted sessions from the local remote-agent service",
+    )
+    _add_service_base_url_argument(sessions_parser)
+    sessions_parser.set_defaults(handler=_handle_sessions)
+
+    watch_parser = subparsers.add_parser(
+        "watch",
+        help="show the latest hosted session state",
+    )
+    watch_parser.add_argument("session_id")
+    _add_service_base_url_argument(watch_parser)
+    watch_parser.set_defaults(handler=_handle_watch)
+
+    reply_parser = subparsers.add_parser(
+        "reply",
+        help="send a follow-up message to a hosted session",
+    )
+    reply_parser.add_argument("session_id")
+    reply_parser.add_argument(
+        "--message",
+        required=True,
+        help="message to send to the hosted session",
+    )
+    _add_service_base_url_argument(reply_parser)
+    reply_parser.set_defaults(handler=_handle_reply)
+
+    stop_parser = subparsers.add_parser(
+        "stop",
+        help="stop a hosted session",
+    )
+    stop_parser.add_argument("session_id")
+    _add_service_base_url_argument(stop_parser)
+    stop_parser.set_defaults(handler=_handle_stop)
 
     kimi_parser = subparsers.add_parser(
         "kimi",
@@ -77,13 +114,17 @@ def build_parser() -> argparse.ArgumentParser:
         default=os.environ.get("KIMI_BIN"),
         help="override the kimi executable path",
     )
-    kimi_start_parser.add_argument(
+    _add_service_base_url_argument(kimi_start_parser)
+    kimi_start_parser.set_defaults(handler=_handle_kimi_start)
+    return parser
+
+
+def _add_service_base_url_argument(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
         "--service-base-url",
         default=default_service_base_url(),
         help="base URL for the local remote-agent service",
     )
-    kimi_start_parser.set_defaults(handler=_handle_kimi_start)
-    return parser
 
 
 def _get_env_int(name: str, default: int) -> int:
@@ -122,9 +163,57 @@ def _handle_serve(args: argparse.Namespace) -> int:
     return 0
 
 
+def _handle_sessions(args: argparse.Namespace) -> int:
+    return _print_service_result(
+        lambda: get_json(
+            path="/v1/sessions",
+            base_url=args.service_base_url,
+        ),
+        service_base_url=args.service_base_url,
+    )
+
+
+def _handle_watch(args: argparse.Namespace) -> int:
+    return _print_service_result(
+        lambda: get_json(
+            path=f"/v1/sessions/{args.session_id}",
+            base_url=args.service_base_url,
+        ),
+        service_base_url=args.service_base_url,
+    )
+
+
+def _handle_reply(args: argparse.Namespace) -> int:
+    return _print_service_result(
+        lambda: post_json(
+            path=f"/v1/sessions/{args.session_id}/reply",
+            payload={
+                "message": args.message,
+            },
+            base_url=args.service_base_url,
+            timeout_seconds=max(
+                float(_get_env_int("REMOTE_AGENT_KIMI_TIMEOUT_SECONDS", 90)) + 5.0,
+                10.0,
+            ),
+        ),
+        service_base_url=args.service_base_url,
+    )
+
+
+def _handle_stop(args: argparse.Namespace) -> int:
+    return _print_service_result(
+        lambda: post_json(
+            path=f"/v1/sessions/{args.session_id}/stop",
+            payload={},
+            base_url=args.service_base_url,
+        ),
+        service_base_url=args.service_base_url,
+    )
+
+
 def _handle_kimi_start(args: argparse.Namespace) -> int:
-    try:
-        payload = post_json(
+    return _print_service_result(
+        lambda: post_json(
             path="/v1/kimi/start",
             payload={
                 "task": args.task,
@@ -134,30 +223,43 @@ def _handle_kimi_start(args: argparse.Namespace) -> int:
             },
             base_url=args.service_base_url,
             timeout_seconds=max(float(args.timeout_seconds) + 5.0, 10.0),
-        )
+        ),
+        task=args.task,
+        workdir=args.workdir,
+        timeout_seconds=args.timeout_seconds,
+        service_base_url=args.service_base_url,
+    )
+
+
+def _print_service_result(
+    request_fn,
+    *,
+    task: str | None = None,
+    workdir: str | None = None,
+    timeout_seconds: int | None = None,
+    service_base_url: str | None = None,
+) -> int:
+    try:
+        payload = request_fn()
     except RemoteAgentServiceError as exc:
         print_json(
             {
-                "type": "kimi_start_result",
+                "type": "remote_agent_service_error",
                 "accepted": False,
-                "provider": "kimi",
-                "task": args.task,
+                "task": task,
                 "session": {
-                    "provider": "kimi",
                     "state": "failed",
-                    "created_at": None,
-                    "workdir": args.workdir or os.getcwd(),
+                    "workdir": workdir or os.getcwd(),
                 },
                 "worker": {
                     "status": "service_unavailable",
-                    "mode": "hosted_wire",
                     "transport": "kimi --wire",
-                    "timeout_seconds": args.timeout_seconds,
+                    "timeout_seconds": timeout_seconds,
                     "error": str(exc),
                 },
                 "service": {
-                    "base_url": args.service_base_url,
-                    "entrypoint": "remote_agent.service_client:post_json",
+                    "base_url": service_base_url or default_service_base_url(),
+                    "entrypoint": "remote_agent.service_client:_request_json",
                 },
             }
         )
