@@ -25,7 +25,12 @@
 - `P3` 本地控制端 MVP
 - `P4` Remote-Agent Foundation
 - `P4.5` Hosted Session Usability
+- `P4.5-A` Relay Integration
+- `P4.5-B` Session CLI
+- `P4.5-C` Hosted Session Contract
+- `P4.5-D` Recovery Contract
 - `P5` Multi-Remote
+- `P6` 跨平台清理
 
 当前优先事项：
 
@@ -207,13 +212,88 @@ flowchart LR
 - 当前还没有正式的 checkpoint 持久化、pending approvals replay 或控制面事件 replay
 - 后续将“可恢复控制面”作为明确目标；provider 原始执行现场恢复将按各 provider 能力分别处理
 
+## 首次公开 Beta 发布面
+
+`P6.5-1` 将第一次公开 Beta 固定为面向技术试用者的最小
+source-run Beta，而不是带 installer 的完整桌面产品。
+
+本次 Beta 包含：
+
+- 一个本地 `relay`
+- 一个本地 `desktop`
+- 每台远端 Linux 主机一个 `remote-agent`
+- `Kimi --wire`
+- hosted session CLI：`start / sessions / watch / reply / stop`
+- multi-remote 聚合基线
+
+本次 Beta 明确不包含：
+
+- `Codex`
+- `Claude Code`
+- `attach`
+- reconnect / 持久化 / replay / `P8` 恢复系统
+- 云 relay
+- desktop installer
+- `remote-agent` 的 PyPI 包、wheel 发布或系统发行包
+
+最小启动路径：
+
+1. 在本地启动 `relay`
+2. 在同一台本地机器启动 `desktop`，默认连接 `http://127.0.0.1:8000`
+3. 在每台远端 Linux 主机上部署 `remote-agent`
+4. 为远端服务显式配置 `REMOTE_AGENT_RELAY_ENDPOINT` 与
+   `REMOTE_AGENT_CONTROL_BASE_URL`；多 remote 试用建议同时设置
+   `REMOTE_AGENT_REMOTE_NAME`
+5. 在远端执行 `remote-agent kimi start --task "..."`
+6. 在本地 `desktop` 中查看 session / approval 并执行 `approve / reject`
+
+交付形态：
+
+- `desktop`：以 repo 内 `desktop/` 源码目录交付，当前口径是
+  `npm install && npm start`，不是 installer
+- `remote-agent`：以 repo 内 `remote-agent/` Python 包源码与
+  `systemd --user` 安装脚本交付，不是独立安装包
+- `relay`：作为本地 operator-run FastAPI 进程交付，是 Beta 必需组件，
+  不是云服务，也不是单独托管产品
+
+最小试用前提：
+
+- 试用者需要能操作 Python、npm、SSH 与 `systemd --user`
+- 本地需要能运行 Python 与 Node.js / npm
+- 远端 Linux 需要可用的 `python3`、`systemctl --user`、`loginctl`
+  与 logout-survival 所需的 linger 能力
+- 远端需要已安装可执行 `kimi --wire` 的 `kimi`，或显式提供 `KIMI_BIN`
+- 每台远端都必须能访问本地 `relay`，本地 `relay` 也必须能访问每台远端
+  `remote-agent` 的控制地址
+
+当前公开 Beta 已知限制：
+
+- 远端 `remote-agent` 试用当前仍需要手工补充 relay / control 相关环境变量
+- `watch` 不是持续 follow
+- `attach` 未实现
+- `stop` 不能在 `approval_pending` 或 turn 运行中执行
+- `relay` 与 `remote-agent` 都还是内存态；重启后不会恢复既有托管状态
+- 当前发布面是 source-run / source-install Beta，不是开箱即用 installer Beta
+
 ## 平台策略
 
 平台边界如下：
 
 - 本地开发平台：Windows
-- 本地目标平台：Windows 与 macOS
+- 本地产品目标平台：Windows 与 macOS
 - 远程 provider 运行平台：Linux
+
+首次公开 Beta 支持矩阵如下：
+
+| Surface | Platform | 首次公开 Beta 状态 | 说明 |
+| --- | --- | --- | --- |
+| 本地 `desktop + relay` | Windows | 支持 | 当前按 repo source-run 交付 |
+| 本地 `desktop + relay` | macOS | 不纳入首发承诺 | `P6` 已做跨平台清理，但本次 Beta 不把 macOS 写成已交付 |
+| 本地 `desktop + relay` | Linux | 不包含 | 不属于当前本地目标平台 |
+| 远端 `remote-agent` | Linux | 支持 | 需 `systemd --user`、`loginctl` 与 linger |
+| 远端 `remote-agent` | Windows / macOS | 不包含 | 当前没有对应 deploy 面 |
+| provider | `Kimi --wire` | 支持 | 本次公开 Beta 唯一正式 provider |
+| provider | `Codex` / `Claude Code` | 不包含 | 分别后移到 `P7` 与 `V2` |
 
 项目从一开始即按“跨平台核心 + 平台专属外壳”设计。
 
@@ -242,26 +322,18 @@ flowchart LR
 - `P2` Kimi 闭环
 - `P2.5` Kimi bridge 收口与远端复核
 - `P3` 本地控制端 MVP
-
-`已完成`
-
 - `P4` Remote-Agent Foundation
 - `P4.5` Hosted Session Usability
-- `P4.5-A` Relay Integration
-- `P4.5-B` Session CLI
-- `P4.5-C` Hosted Session Contract
-- `P4.5-D` Recovery Contract
+- `P5` Multi-Remote
+- `P6` 跨平台清理
 
-`当前推荐节点`
+`当前`
 
 - `P6.5` Public Beta Release
 
-`下一节点`
+`后续`
 
 - `P7` Codex Support
-
-`后续节点`
-
 - `P8` 可靠性增强
 
 `P4.5` 用于将托管 session 从“已经具备 foundation”补到“可以日常使用”的最小闭环，重点包括：
@@ -393,15 +465,20 @@ agent-control-plane/
 ### relay
 
 ```text
-python -m uvicorn relay.main:app --reload
+python -m pip install -r requirements-relay.txt
+python -m uvicorn relay.main:app --host 127.0.0.1 --port 8000
 ```
 
 ### desktop
 
 ```text
 cd desktop
+npm install
 npm start
 ```
+
+默认 `desktop` 读取 `http://127.0.0.1:8000`；如需覆盖，可设置
+`RELAY_BASE_URL`。
 
 ### remote-agent
 
@@ -415,6 +492,21 @@ remote-agent sessions
 ```
 
 非 PATH 安装的 `kimi` 应通过 `KIMI_BIN` 或 `remote-agent kimi start --kimi-bin ...` 显式指定；共享 runtime 不再默认探测 Linux home 路径下的 provider 二进制。
+
+首次公开 Beta 试用时，远端服务 env 至少还需要显式补充：
+
+```text
+REMOTE_AGENT_RELAY_ENDPOINT=http://<local-relay-host>:8000
+REMOTE_AGENT_CONTROL_BASE_URL=http://<remote-host>:8711
+REMOTE_AGENT_REMOTE_NAME=<unique-remote-id>
+```
+
+其中：
+
+- `REMOTE_AGENT_RELAY_ENDPOINT` 用于让远端把标准事件上报回本地 `relay`
+- `REMOTE_AGENT_CONTROL_BASE_URL` 必须是本地 `relay` 可回连的远端控制地址；
+  不应保留为默认的 `127.0.0.1`
+- `REMOTE_AGENT_REMOTE_NAME` 建议在 multi-remote 试用时显式设置，避免展示名随主机环境漂移
 
 远端 Linux deploy 壳层继续留在 `remote-agent/deploy/` 与 `remote-agent/scripts/`，当前部署口径仍是从已部署的 repo 副本进入 `remote-agent/` 目录后执行：
 

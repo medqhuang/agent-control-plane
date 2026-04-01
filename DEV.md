@@ -44,6 +44,7 @@
 
 - 已完成：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P4.5-A`、`P4.5-B`、`P4.5-C`、`P4.5-D`、`P5`、`P5-1`、`P5-1.5`、`P5-2`、`P5-3`、`P6-1`、`P6-2`、`P6-3`、`P6`
 - 当前阶段：`P6.5 Public Beta Release`
+- 当前子目标：`P6.5-1 Release Surface Definition`
 - 当前节点：`P6.5 Public Beta Release`
 - 下一节点：`P7 Codex Support`
 - 下一阶段：`P7 Codex Support`
@@ -52,6 +53,9 @@
 当前主线已完成 `P5 Multi-Remote` 与 `P6 跨平台清理` 收口，当前进入 `P6.5 Public Beta Release`。
 当前阶段也不以实时聊天 UI 或推理链可视化作为主目标；后续实时会话控制属于平台增强能力，不改变控制平面的产品定位。
 `P6-1`、`P6-2` 与 `P6-3` 已完成；`P6` 整体已完成，阶段收口记录见 `P6_worklog.md`。
+`P6.5` 当前先做 `P6.5-1 Release Surface Definition`：先固定第一次公开
+Beta 的包含组件、交付形态、平台矩阵、最小启动路径与已知限制，再进入
+后续打包、文档、截图、issue 模板与 release notes 收口。
 
 ## 当前融合原则
 
@@ -85,7 +89,7 @@
 - 允许将 `references/claude-code-haha-main/src/QueryEngine.ts`
   、`references/claude-code-haha-main/src/Tool.ts`
   、`references/claude-code-haha-main/src/bootstrap/state.ts`
-  与 `references/claude-code-haha-main/src/bridge/` 作为 `P6` 与 `P8` 的实现参考
+  与 `references/claude-code-haha-main/src/bridge/` 作为 `P6.5` 与 `P8` 的实现参考
 - 当前不因为本地已有 Claude Code 源码而提前进入 `Claude Code Support`
 - 当前不因为本地已有 Claude Code 源码而改变后续 `P6.5 -> P7 -> P8 -> V2 Claude` 的阶段顺序
 - 当前不将 Claude 的内部实现细节直接抽象成项目的顶层架构
@@ -167,8 +171,8 @@ provider 原生接入策略固定如下：
 - `已完成`：`P4.5-C` Hosted Session Contract
 - `已完成`：`P4.5-D` Recovery Contract
 - `已完成`：`P5` Multi-Remote
-- `当前`：`P6` 跨平台清理
-- `后续`：`P6.5` Public Beta Release
+- `已完成`：`P6` 跨平台清理
+- `当前`：`P6.5` Public Beta Release
 - `后续`：`P7` Codex Support
 - `后续`：`P8` 可靠性增强
 - `V2`：`Claude Code Support`
@@ -543,6 +547,7 @@ remote-agent kimi start --task "重构 auth 模块"
 
 - 当前阶段
 - 当前节点：`P6.5 Public Beta Release`
+- 当前子目标：`P6.5-1 Release Surface Definition`
 
 ### 目标
 
@@ -580,6 +585,143 @@ remote-agent kimi start --task "重构 auth 模块"
 - `P8` 级别的可靠性硬化
 - 商业级安装器
 - 多设备切换
+
+### P6.5-1 Release Surface Definition
+
+`P6.5-1` 的职责不是打包，而是先把第一次公开 Beta 的 release surface
+定义收稳，避免后续打包、文档与对外表述继续漂移。
+
+此次定义固定为：
+
+- 面向技术试用者的 source-run / source-install Beta
+- 发布单元是当前 repo 及其中的 `desktop/`、`relay/`、`remote-agent/`
+- 不把尚未落地的安装器、恢复系统、额外 provider 接入写成已交付承诺
+
+### 首次公开 Beta 包含组件
+
+- 本地 `relay`
+- 本地 `desktop`
+- 远端 `remote-agent`
+- `Kimi --wire`
+- hosted session CLI：`start / sessions / watch / reply / stop`
+- multi-remote 聚合基线
+
+### 首次公开 Beta 不包含
+
+- `Codex`
+- `Claude Code`
+- `attach`
+- reconnect
+- 持久化 / checkpoint / replay
+- `remote-agent` 重启后托管状态恢复
+- provider 执行现场恢复
+- 云 relay
+- desktop installer
+- `remote-agent` 的 PyPI 包、wheel 或系统发行包
+
+### 组件交付形态
+
+- `desktop`
+  - 当前交付形态是 repo 内 `desktop/` 源码目录
+  - 当前启动口径是 `npm install && npm start`
+  - 当前不是 installer，不承诺签名、自动更新或平台原生分发
+- `remote-agent`
+  - 当前交付形态是 repo 内 `remote-agent/` Python 包源码
+  - 当前安装口径是从 repo 副本执行 `python -m pip install -e ./remote-agent`
+    或 `bash scripts/install-systemd-user.sh --start`
+  - 当前不是 PyPI 包，不承诺 apt/rpm/homebrew 之类分发面
+- `relay`
+  - 当前交付形态是 repo 内 `relay/` FastAPI 入口
+  - 当前运行口径是用户在本地手工启动的单进程服务
+  - 当前不是云服务、托管服务，也不是单独产品线
+
+### relay 在首发 Beta 中的定位
+
+- `relay` 是本地控制面的必需聚合层
+- `desktop` 只消费 `relay` snapshot，不直接连远端 provider
+- `remote-agent` 只向 `relay` 上报标准事件，并通过 `relay` 接收 approval
+  决策回写
+- 本次 Beta 不引入 hosted relay、团队共享 relay 或云端中继叙述
+
+### 最小启动路径
+
+1. 本地安装 `relay` 依赖并启动 `relay`
+2. 本地安装 `desktop` 依赖并启动 `desktop`
+3. 将 `remote-agent/` 部署到远端 Linux 主机
+4. 在远端安装并启动 `remote-agent` user service
+5. 手工补充远端 env 中的 `REMOTE_AGENT_RELAY_ENDPOINT`、
+   `REMOTE_AGENT_CONTROL_BASE_URL` 与建议使用的 `REMOTE_AGENT_REMOTE_NAME`
+6. 确认远端 `kimi --wire` 可用，或显式设置 `KIMI_BIN`
+7. 在远端执行 `remote-agent kimi start --task "..."`
+8. 在本地 `desktop` 中看到 session / approval，并完成一次 `approve / reject`
+
+### 支持平台矩阵
+
+| Surface | Platform | 首次公开 Beta 状态 | 说明 |
+| --- | --- | --- | --- |
+| 本地 `desktop + relay` | Windows | 支持 | 当前首发公开 Beta 的本地运行面 |
+| 本地 `desktop + relay` | macOS | 不纳入首发承诺 | `P6` 已清理跨平台边界，但本次不把 macOS 写成已交付 |
+| 本地 `desktop + relay` | Linux | 不包含 | 不属于当前本地目标平台 |
+| 远端 `remote-agent` | Linux | 支持 | 需 `python3`、`systemd --user`、`loginctl` 与 linger |
+| 远端 `remote-agent` | Windows / macOS | 不包含 | 当前没有对应 deploy 面 |
+| provider | `Kimi --wire` | 支持 | 本次唯一正式 provider |
+| provider | `Codex` / `Claude Code` | 不包含 | 分别后移到 `P7` 与 `V2` |
+
+### 用户试用的最小前置条件
+
+- 本地具备可运行 `relay` 的 Python 环境；建议按 `remote-agent` 基线统一为
+  Python `3.10+`
+- 本地具备 Node.js 与 npm，可在 `desktop/` 执行 `npm install`
+- 远端 Linux 具备 `python3`、`venv`、`systemctl --user`、`loginctl`
+- 远端用户具备 linger；若没有，需要显式执行 `loginctl enable-linger`
+- 远端已安装可执行 `kimi --wire` 的 `kimi`，或能显式提供 `KIMI_BIN`
+- 本地 `relay` 可被远端访问；远端 `remote-agent` 控制地址也可被本地 `relay`
+  访问
+- 试用者能接受当前需要手工编辑远端 env 文件，而不是完全自动安装
+
+### 当前已知限制
+
+- `install-systemd-user.sh` 当前不会自动写入 `REMOTE_AGENT_RELAY_ENDPOINT`、
+  `REMOTE_AGENT_CONTROL_BASE_URL` 或 `REMOTE_AGENT_REMOTE_NAME`；首发 Beta
+  试用仍需手工补充
+- `desktop` 当前是 source-run 交付，不是安装包
+- `relay` 当前是本地手工启动进程，不是后台自启动服务
+- `watch` 当前是单次读取，不是持续 follow
+- `attach` 当前未实现
+- `stop` 当前不能用于 `approval_pending` 或 turn 进行中的 session
+- `relay` 与 `remote-agent` 当前都仍是内存态；重启后不会恢复既有 session、
+  pending approvals 或事件视图
+- 当前不承诺 provider 原始执行现场 `resume / reattach`
+
+### 面向 Beta 的最小交付清单
+
+- 一份明确写清“包含什么 / 不包含什么”的根目录 `README.md`
+- 一份明确写清发布边界、平台矩阵与后续顺序的根目录 `DEV.md`
+- 一份冻结 `P6.5-1` 口径的 `P6.5_worklog.md`
+- 一条可操作的最小 Quick Start：本地 `relay + desktop`，远端
+  `remote-agent + Kimi`
+- 一份明确的支持矩阵与已知限制列表
+- 一组首发截图或演示材料
+- 一组面向试用者的 issue 模板
+- 一份首发 Beta release notes
+
+### 建议后续子任务顺序
+
+1. `P6.5-2 Desktop Delivery Baseline`
+   - 固定 desktop 首发交付形态
+   - 决定是否保持纯 source-run，或补最小压缩包分发
+   - 不进入完整 installer
+2. `P6.5-3 Remote-Agent Trial Install Surface`
+   - 收口远端试用安装路径
+   - 明确 env 模板、手工步骤与最小验证命令
+3. `P6.5-4 Quick Start And Trial Docs`
+   - 产出一条从启动到审批完成的最小公开试用路径
+4. `P6.5-5 Screenshots And Demo Capture`
+   - 录制或截取 desktop、multi-remote、approval 流程
+5. `P6.5-6 Issue Templates And Feedback Intake`
+   - 准备 bug report / trial feedback / environment report 模板
+6. `P6.5-7 Release Notes And Launch Checklist`
+   - 产出对外 release notes、已知限制、试用注意事项与发布检查单
 
 ### 完成标准
 
@@ -751,15 +893,20 @@ remote-agent kimi start --task "重构 auth 模块"
 ### 运行 relay
 
 ```text
-python -m uvicorn relay.main:app --reload
+python -m pip install -r requirements-relay.txt
+python -m uvicorn relay.main:app --host 127.0.0.1 --port 8000
 ```
 
 ### 运行 desktop
 
 ```text
 cd desktop
+npm install
 npm start
 ```
+
+默认 `desktop` 读取 `http://127.0.0.1:8000`；如需覆盖，可设置
+`RELAY_BASE_URL`。
 
 ### 运行 remote-agent
 
@@ -771,6 +918,17 @@ remote-agent serve
 remote-agent kimi start --task "重构 auth 模块"
 remote-agent sessions
 ```
+
+首发公开 Beta 试用时，远端 env 至少还需要显式补充：
+
+```text
+REMOTE_AGENT_RELAY_ENDPOINT=http://<local-relay-host>:8000
+REMOTE_AGENT_CONTROL_BASE_URL=http://<remote-host>:8711
+REMOTE_AGENT_REMOTE_NAME=<unique-remote-id>
+```
+
+其中 `REMOTE_AGENT_CONTROL_BASE_URL` 必须是本地 `relay` 可回连的远端地址；
+不应保留为默认的 `127.0.0.1`。
 
 ### 远端 Linux 部署 remote-agent
 
