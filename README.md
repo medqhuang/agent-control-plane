@@ -2,18 +2,18 @@
 
 面向远程 AI 编码 CLI 的自托管控制平面。
 
-`Agent Control Plane` 用于将分散在远程服务器、不同 CLI 和不同终端中的 session 状态与 approval request，统一收回到本地控制端进行查看、审批与后续控制。
+`Agent Control Plane` 用于将分散在远程服务器、不同 CLI 和不同终端中的 session 状态、approval request 与后续交互，统一收回到本地控制端进行查看、审批与继续控制。
 
 ## 项目状态
 
 - 已完成阶段：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P5`、`P6`、`P6.5`
 - 已完成子阶段：`P4.5-A Relay Integration`、`P4.5-B Session CLI`、`P4.5-C Hosted Session Contract`、`P4.5-D Recovery Contract`、`P5-1 Server Registry`、`P5-1.5 Approval Identity Hardening`、`P5-2 Desktop Multi-Remote View`、`P5-3 Remote Status Marking`、`P6-1 Platform Assumption Audit`、`P6-2 Runbook And Text Policy Cleanup`、`P6-3 Boundary Cleanup`
-- 当前阶段：`P7 Codex Support`
-- 当前子目标：`P7 Codex Support`
-- 当前节点：`P7 Codex Support`
-- 下一节点：`P8 可靠性增强`
-- 下一阶段：`P8 可靠性增强`
-- `V1` 主线：`Kimi` + `remote-agent` + `Multi-Remote` + `Codex`
+- 当前阶段：`P7 Local Session Interaction UI`
+- 当前子目标：`P7 Local Session Interaction UI`
+- 当前节点：`P7-A Desktop Session Detail And Transcript`
+- 下一节点：`P8 V1.0 Release`
+- 下一阶段：`P8 V1.0 Release`
+- `V1` 主线：`Kimi` + `remote-agent` + `Multi-Remote` + `Local Session Interaction UI`
 - `V2` 计划：`Claude Code`
 
 已完成里程碑：
@@ -35,7 +35,8 @@
 
 当前优先事项：
 
-- 推进 `P7 Codex Support`
+- 推进 `P7 Local Session Interaction UI`
+- 在不改变托管平台架构的前提下，让本地 `desktop` 可以查看 hosted session 内容并继续交互
 - 保持 `P5` 已完成的多 remote 基线稳定，不回退为单 remote 视角
 - 保持 `P4` 与 `P4.5` 已完成链路稳定，不回退到旧 bridge 主路径
 - 保持 recovery 相关表述继续遵循当前 contract-only 边界，不把未实现恢复系统写成已支持
@@ -55,11 +56,11 @@
 - 控制面事件 replay
 - provider 执行现场恢复
 
-这些能力仍保留在后续可靠性阶段，尤其是 `P8`，不应被误写为 `P5` 已落地。
+这些能力仍保留在正式 `v1.0` 之后的可靠性增强阶段，尤其是 `P10`，不应被误写为 `P5` 已落地。
 
 ## 项目目标
 
-本项目当前不以聊天 UI 或推理链可视化作为主目标。
+本项目当前不以通用聊天 UI 或推理链可视化作为主目标，但本地控制端必须具备对已托管 session 的基础交互能力。
 
 当前版本聚焦解决远程 AI 编码工作流中的控制面问题：
 
@@ -70,7 +71,7 @@
 
 项目目标可以概括为：
 
-`将远程 agent 的状态、审批与后续控制稳定地统一回收到本地。`
+`将远程 agent 的状态、审批与后续交互稳定地统一回收到本地。`
 
 ## V1 范围
 
@@ -80,9 +81,11 @@
 - 一个本地 `relay`
 - 每台远程服务器一个 `remote-agent`
 - 统一的 session 列表与 approval 列表
+- 本地 session 详情与最近回复查看
+- 本地对已托管 session 的 `reply` 交互
 - 本地统一 `approve / reject`
 - 多 remote 聚合
-- 首批 provider：`Kimi`，随后接入 `Codex`
+- 首个正式 provider：`Kimi`
 
 `V1` 明确不包含以下内容：
 
@@ -99,7 +102,7 @@
 当前 provider 接入策略固定如下：
 
 - `Kimi`：优先使用 `kimi --wire`
-- `Codex`：优先使用 `codex app-server`
+- `Codex`：后移至 `P9`
 - `Claude Code`：延期至 `V2`
 
 这意味着本项目不会继续将 `tmux + TUI` 作为长期主架构，而是优先采用 provider 原生或半原生的结构化接入面。
@@ -175,6 +178,7 @@ flowchart LR
 - pending approvals 列表
 - 本地 `approve / reject` 提交
 - relay 连接状态展示
+- 远端 shell 中的 `reply` 可继续与 hosted session 交互
 
 当前稳定规则：
 
@@ -196,6 +200,7 @@ flowchart LR
 
 - `attach` 尚未实现
 - Recovery 实现尚未正式落地
+- 本地 `desktop` 当前仍只覆盖控制面，不显示 hosted session 的回复内容，也不能从 UI 提交 `reply`
 
 当前 hosted session 的已知边界包括：
 
@@ -218,7 +223,7 @@ flowchart LR
 `P6.5-1`、`P6.5-2`、`P6.5-3`、`P6.5-4`、`P6.5-5`、`P6.5-6` 与 `P6.5-7` 已完成，
 并已将第一次公开 Beta 固定为面向技术试用者的最小 source-run Beta，而不是带
 installer 的完整桌面产品。
-`P6.5` 已整体完成；当前阶段已切换为 `P7 Codex Support`。
+`P6.5` 已整体完成；当前阶段已切换为 `P7 Local Session Interaction UI`。
 
 本次 Beta 包含：
 
@@ -234,7 +239,7 @@ installer 的完整桌面产品。
 - `Codex`
 - `Claude Code`
 - `attach`
-- reconnect / 持久化 / replay / `P8` 恢复系统
+- reconnect / 持久化 / replay / `P10` 可靠性增强系统
 - 云 relay
 - desktop installer
 - `remote-agent` 的 PyPI 包、wheel 发布或系统发行包
@@ -353,7 +358,7 @@ remote-agent 首发试用安装基线：
 | 远端 `remote-agent` | Linux | 支持 | 需 `systemd --user`、`loginctl` 与 linger |
 | 远端 `remote-agent` | Windows / macOS | 不包含 | 当前没有对应 deploy 面 |
 | provider | `Kimi --wire` | 支持 | 本次公开 Beta 唯一正式 provider |
-| provider | `Codex` / `Claude Code` | 不包含 | 分别后移到 `P7` 与 `V2` |
+| provider | `Codex` / `Claude Code` | 不包含 | 分别后移到 `P9` 与 `V2` |
 
 项目从一开始即按“跨平台核心 + 平台专属外壳”设计。
 
@@ -565,12 +570,13 @@ approval request”。
 
 `当前`
 
-- `P6.5` Public Beta Release
+- `P7` Local Session Interaction UI
 
 `后续`
 
-- `P7` Codex Support
-- `P8` 可靠性增强
+- `P8` V1.0 Release
+- `P9` Codex Support
+- `P10` 可靠性增强
 
 `P4.5` 用于将托管 session 从“已经具备 foundation”补到“可以日常使用”的最小闭环，重点包括：
 
@@ -596,7 +602,7 @@ approval request”。
 - 还没有实现 checkpoint 持久化、pending approvals replay、控制面事件 replay 或 provider 执行现场恢复
 - 这些恢复实现工作继续留在后续可靠性阶段，而不是被误写成 `P4.5` 已落地能力
 
-在此基础上，`P5 Multi-Remote` 与 `P6 跨平台清理` 也已完成，当前阶段切换为 `P6.5 Public Beta Release`。
+在此基础上，`P5 Multi-Remote`、`P6 跨平台清理` 与 `P6.5 Public Beta Release` 也已完成，当前阶段切换为 `P7 Local Session Interaction UI`。
 
 `P6.5 Public Beta Release` 插在 `P6` 与 `P7` 之间，用于完成首次公开可试用版本所需的最小封装与发布准备，重点包括：
 
@@ -606,7 +612,21 @@ approval request”。
 - 面向外部试用者的 release notes、issue 模板与试用讲解说明
 
 `P6.5` 的定位是公开 Beta 发布，而不是 `Codex` 接入后的完整正式版本。
-`P6-1`、`P6-2` 与 `P6-3` 已全部完成，因此当前主线已从 `P6` 前推到 `P6.5`。
+`P6-1`、`P6-2` 与 `P6-3` 已全部完成，`P6.5` 也已完成；当前主线从公开 Beta 前推到本地会话交互 UI。
+
+`P7 Local Session Interaction UI` 是当前正式阶段，用于补齐本地控制端对 hosted session 的基础交互，而不是继续只依赖远端 shell。其重点包括：
+
+- desktop session detail / transcript view
+- 本地查看最近一轮 hosted session 的回复内容
+- 本地对已托管 session 提交 `reply`
+- 让 session 状态、approval 与后续交互在本地控制端形成同一条闭环
+
+`P7` 明确不要求：
+
+- `attach`
+- 通用聊天工作台
+- 推理链可视化
+- provider 原始 token 流直接透传到 `relay`
 
 当前 hosted session contract 约定如下：
 
@@ -638,8 +658,10 @@ approval request”。
 `V1 后续`
 
 - `P6.5` Public Beta Release
-- `P7` Codex Support
-- `P8` 可靠性增强
+- `P7` Local Session Interaction UI
+- `P8` V1.0 Release
+- `P9` Codex Support
+- `P10` 可靠性增强
 
 `V2`
 
@@ -654,9 +676,11 @@ approval request”。
 - `P6-1`：先盘清仓库内仍然存在的 Windows / PowerShell / 路径 / 编码 / 平台 API 假设，明确阻塞项与最小清理落点
 - `P6-2`：先收口运行入口、文档命令面与仓库文本策略，再进入后续模块边界清理
 - `P6-3`：继续收口模块边界，保持 Linux deploy 壳层与 desktop 平台壳层不回流到共享核心
-- `P6.5`：完成首次公开 Beta 发布准备，封装当前 `Kimi + remote-agent + desktop + Multi-Remote` 最小可试用交付，不等同于 `Codex` 阶段
-- `P8`：落实“本地可关闭、远端持续运行、后续可重连恢复”的稳定能力
-- `P8`：同时完成“服务复活、状态重建、恢复边界说明”的正式实现与正式文档化
+- `P6.5`：完成首次公开 Beta 发布准备，封装当前 `Kimi + remote-agent + desktop + Multi-Remote` 最小可试用交付
+- `P7`：补齐本地控制端对 hosted session 的基础交互，包括 session detail、最近回复展示与本地 `reply` 提交
+- `P8`：以当前 `Kimi + remote-agent + Multi-Remote + Local Session Interaction UI` 为范围，完成正式 `v1.0` 发布收口
+- `P9`：接入第二个正式 provider：`Codex`
+- `P10`：落实更完整的恢复、checkpoint、replay 与可靠性增强
 
 `P6-3` 当前固定边界：
 

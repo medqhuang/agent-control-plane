@@ -43,23 +43,23 @@
 当前项目状态：
 
 - 已完成：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P4.5-A`、`P4.5-B`、`P4.5-C`、`P4.5-D`、`P5`、`P5-1`、`P5-1.5`、`P5-2`、`P5-3`、`P6-1`、`P6-2`、`P6-3`、`P6`、`P6.5`
-- 当前阶段：`P7 Codex Support`
-- 当前子目标：`P7 Codex Support`
-- 当前节点：`P7 Codex Support`
-- 下一节点：`P8 可靠性增强`
-- 下一阶段：`P8 可靠性增强`
+- 当前阶段：`P7 Local Session Interaction UI`
+- 当前子目标：`P7 Local Session Interaction UI`
+- 当前节点：`P7-A Desktop Session Detail And Transcript`
+- 下一节点：`P8 V1.0 Release`
+- 下一阶段：`P8 V1.0 Release`
 - `V1` 暂不接入 `Claude Code`
 
 当前主线已完成 `P5 Multi-Remote`、`P6 跨平台清理` 与 `P6.5 Public Beta Release`
-收口，当前进入 `P7 Codex Support`。
-当前阶段也不以实时聊天 UI 或推理链可视化作为主目标；后续实时会话控制属于平台增强能力，不改变控制平面的产品定位。
+收口，当前进入 `P7 Local Session Interaction UI`。
+当前阶段不以通用聊天 UI 或推理链可视化作为主目标，但本地控制端必须具备对已托管 session 的基础交互能力；这属于当前产品闭环，而不是后续可有可无的增强项。
 `P6-1`、`P6-2` 与 `P6-3` 已完成；`P6` 整体已完成，阶段收口记录见 `P6_worklog.md`。
 `P6.5-1 Release Surface Definition`、`P6.5-2 Desktop Delivery Baseline`、
 `P6.5-3 Remote-Agent Trial Install Surface`、
 `P6.5-4 Quick Start And Trial Docs`、`P6.5-5 Trial Operator Guide`、
 `P6.5-6 Issue Templates And Feedback Intake` 与
 `P6.5-7 Release Notes And Launch Checklist` 已完成；当前阶段前推到
-`P7 Codex Support`。
+`P7 Local Session Interaction UI`。
 
 ## 当前融合原则
 
@@ -93,9 +93,9 @@
 - 允许将 `references/claude-code-haha-main/src/QueryEngine.ts`
   、`references/claude-code-haha-main/src/Tool.ts`
   、`references/claude-code-haha-main/src/bootstrap/state.ts`
-  与 `references/claude-code-haha-main/src/bridge/` 作为 `P6.5` 与 `P8` 的实现参考
+  与 `references/claude-code-haha-main/src/bridge/` 作为 `P7` 与 `P10` 的实现参考
 - 当前不因为本地已有 Claude Code 源码而提前进入 `Claude Code Support`
-- 当前不因为本地已有 Claude Code 源码而改变后续 `P6.5 -> P7 -> P8 -> V2 Claude` 的阶段顺序
+- 当前不因为本地已有 Claude Code 源码而改变后续 `P7 -> P8 -> P9 -> P10 -> V2 Claude` 的阶段顺序
 - 当前不将 Claude 的内部实现细节直接抽象成项目的顶层架构
 
 ## 当前稳定基线
@@ -176,9 +176,10 @@ provider 原生接入策略固定如下：
 - `已完成`：`P4.5-D` Recovery Contract
 - `已完成`：`P5` Multi-Remote
 - `已完成`：`P6` 跨平台清理
-- `当前`：`P6.5` Public Beta Release
-- `后续`：`P7` Codex Support
-- `后续`：`P8` 可靠性增强
+- `当前`：`P7` Local Session Interaction UI
+- `后续`：`P8` V1.0 Release
+- `后续`：`P9` Codex Support
+- `后续`：`P10` 可靠性增强
 - `V2`：`Claude Code Support`
 
 ## P4 Remote-Agent Foundation
@@ -263,7 +264,7 @@ remote-agent kimi start --task "重构 auth 模块"
 
 - 将单 remote、单 provider 的托管 session 补成“真实可操作”的日常使用闭环
 
-`P4.5` 已完成；其后续 `P5 Multi-Remote` 与 `P6 跨平台清理` 也已完成，当前进入 `P6.5 Public Beta Release`。
+`P4.5` 已完成；其后续 `P5 Multi-Remote`、`P6 跨平台清理` 与 `P6.5 Public Beta Release` 也已完成，当前进入 `P7 Local Session Interaction UI`。
 
 ### 设立原因
 
@@ -591,7 +592,7 @@ remote-agent kimi start --task "重构 auth 模块"
 
 - `Codex Support`
 - `Claude Code`
-- `P8` 级别的可靠性硬化
+- `P10` 级别的可靠性硬化
 - 商业级安装器
 - 多设备切换
 
@@ -600,7 +601,7 @@ remote-agent kimi start --task "重构 auth 模块"
 `P6.5-1` 的职责不是打包，而是先把第一次公开 Beta 的 release surface
 定义收稳，避免后续打包、文档与对外表述继续漂移。
 `P6.5-1` 已完成；`P6.5-2` 到 `P6.5-7` 也已依次完成，当前阶段前推到
-`P7 Codex Support`。
+`P7 Local Session Interaction UI`。
 
 此次定义固定为：
 
@@ -651,7 +652,7 @@ remote-agent kimi start --task "重构 auth 模块"
 `P6.5-2` 的职责是冻结首发公开 Beta 的 desktop 交付基线，而不是提前进入
 installer、签名包或自动更新阶段。
 `P6.5-2` 已完成；其后续依赖的 `P6.5-3` 到 `P6.5-7` 也已完成，当前阶段前推到
-`P7 Codex Support`。
+`P7 Local Session Interaction UI`。
 
 此次冻结为：
 
@@ -689,7 +690,7 @@ desktop 首发公开 Beta 的不承诺项：
 `P6.5-3` 的职责是冻结首发公开 Beta 的 remote-agent 试用安装面，而不是把
 当前仍需手工完成的远端配置步骤伪装成“已自动化安装”。
 `P6.5-3` 已完成；后续 `P6.5-4`、`P6.5-5`、`P6.5-6` 与 `P6.5-7` 也已完成，
-当前阶段前推到 `P7 Codex Support`。
+当前阶段前推到 `P7 Local Session Interaction UI`。
 
 此次冻结为：
 
@@ -771,7 +772,7 @@ Kimi provider binary 发现方式固定为：
 | 远端 `remote-agent` | Linux | 支持 | 需 `python3`、`systemd --user`、`loginctl` 与 linger |
 | 远端 `remote-agent` | Windows / macOS | 不包含 | 当前没有对应 deploy 面 |
 | provider | `Kimi --wire` | 支持 | 本次唯一正式 provider |
-| provider | `Codex` / `Claude Code` | 不包含 | 分别后移到 `P7` 与 `V2` |
+| provider | `Codex` / `Claude Code` | 不包含 | 分别后移到 `P9` 与 `V2` |
 
 ### 用户试用的最小前置条件
 
@@ -808,7 +809,7 @@ Kimi provider binary 发现方式固定为：
 讲解文档，让组织者能够按真实步骤带 2-5 人跑通一次试用。
 
 `P6.5-5` 已完成；后续 `P6.5-6` 与 `P6.5-7` 也已完成，当前阶段前推到
-`P7 Codex Support`。
+`P7 Local Session Interaction UI`。
 
 这一步建立在 `P6.5-4` 已完成的 Quick Start 基线上，但会进一步固定：
 
@@ -884,7 +885,7 @@ Kimi provider binary 发现方式固定为：
 
 ### 建议后续子任务顺序
 
-`P6.5` 的全部子任务已完成。当前阶段应切换到 `P7 Codex Support`，而不是回头
+`P6.5` 的全部子任务已完成。当前阶段应切换到 `P7 Local Session Interaction UI`，而不是回头
 继续重写 remote-agent 试用安装面。
 
 1. `P6.5-2 Desktop Delivery Baseline`
@@ -913,11 +914,81 @@ Kimi provider binary 发现方式固定为：
 - 对外 release notes 与发布前检查单都已经落在仓库中
 - 仓库具备对外公开试用所需的最小说明、限制与反馈入口
 
-## P7 Codex Support
+## P7 Local Session Interaction UI
 
 ### 目标
 
-接入第二个正式 provider。
+让本地 `desktop` 成为已托管 session 的正式交互入口之一，而不再只承担状态查看和审批操作。
+
+### 阶段定位
+
+`P7` 是 `V1` 范围内的产品闭环阶段，不是可选增强项。
+
+如果没有本地 UI 交互入口，`remote-agent kimi start --task "..."` 在返回 shell 后会把后续使用能力只留在远端 CLI 上，产品就无法完整承接 hosted session 的持续使用。
+
+### 范围
+
+- desktop session detail 视图
+- desktop 最近一轮回复或最小 transcript 展示
+- desktop 对已托管 session 的 `reply` 提交
+- relay 补齐本地 UI 所需的 session detail / reply 路由
+- 保持远端 shell 中 `sessions / watch / reply / stop` 继续可用
+- 保持 approval 仍走现有 approval 流，不重写审批语义
+
+### 不包含
+
+- `attach`
+- 通用聊天工作台
+- 推理链可视化
+- 原始 token 流代理
+- `Codex`
+- `Claude Code`
+
+### 完成标准
+
+- 本地 `desktop` 可以打开某个 hosted session 的详情视图
+- 本地 `desktop` 至少可以显示最近一轮回复内容或最小 transcript
+- 本地 `desktop` 可以直接提交 `reply`
+- 通过本地 UI 提交的 `reply` 能回到远端 hosted session 并形成下一轮结果
+- 现有 remote shell CLI 与 approval 行为不回退
+
+## P8 V1.0 Release
+
+### 目标
+
+以当前 `Kimi + remote-agent + Multi-Remote + Local Session Interaction UI` 为范围，完成正式 `v1.0` 发布收口。
+
+### 范围
+
+- 冻结 `V1` 范围与不支持项
+- 收口 README、DEV、Quick Start、试用与发布文档
+- 完成正式 release notes、截图、演示材料与发布检查清单
+- 收口最小安装与启动路径
+- 修复阻塞正式发布的高优先级缺陷
+- 明确 `1.0` 已承诺能力与未承诺能力
+
+### 不包含
+
+- `Codex`
+- `Claude Code`
+- 深度恢复系统
+- checkpoint / replay 全实现
+- 多设备切换
+- 通用聊天工作台
+
+### 完成标准
+
+- 新用户按文档可以完成一次本地控制端启动
+- 新用户可以完成一次远端 `remote-agent` 安装与启动
+- 新用户可以启动一个 `Kimi` hosted session、在本地 UI 中查看内容、提交 `reply`、并处理一次 approval
+- 发布物、截图、发布说明与已知限制齐全
+- 项目对外可以明确标记为 `v1.0`
+
+## P9 Codex Support
+
+### 目标
+
+在 `v1.0` 之后接入第二个正式 provider。
 
 ### 推荐原生接入方式
 
@@ -933,11 +1004,11 @@ Kimi provider binary 发现方式固定为：
 
 - Codex session 能通过 `remote-agent` 启动并被本地控制端监控
 
-## P8 可靠性增强
+## P10 可靠性增强
 
 ### 目标
 
-使系统具备日常使用可信度。
+在 `v1.0` 之后补齐更完整的恢复、checkpoint、replay 与运行时可靠性能力。
 
 ### 范围
 
@@ -973,9 +1044,9 @@ Kimi provider binary 发现方式固定为：
 原因如下：
 
 - `V1` 更需要先收稳 `remote-agent` 与 `Multi-Remote`，并完成 `P6` 的跨平台清理
-- `Kimi` 与 `Codex` 更适合当前控制平面主线
+- `Kimi` 更适合作为当前 `V1` 的唯一正式 provider
 - `Claude Code` 的最佳接入面更偏 `CLI / SDK + hooks`，适合作为第二阶段扩展
-- 即使本地已放入 Claude Code 源码，也只作为 `V2` 设计参考，不改变当前后续 `P6.5 -> P7 -> P8 -> V2 Claude` 的阶段顺序
+- 即使本地已放入 Claude Code 源码，也只作为 `V2` 设计参考，不改变当前后续 `P7 -> P8 -> P9 -> P10 -> V2 Claude` 的阶段顺序
 
 ## Agent 分配建议
 
@@ -987,7 +1058,9 @@ Kimi provider binary 发现方式固定为：
 - `P5`：`谨慎双 agent 并行`
 - `P6`：`单 agent 串行`
 - `P7`：`单 agent 串行`
-- `P8`：可按模块边界并行
+- `P8`：`单 agent 串行`
+- `P9`：`单 agent 串行`
+- `P10`：可按模块边界并行
 - `V2 Claude`：待 `V1` 稳定后再拆
 
 当前不建议的分配方式：
@@ -1014,11 +1087,12 @@ Kimi provider binary 发现方式固定为：
 - `P6-2` 已完成
 - `P6-3` 已完成
 - `P6` 已完成
-- 当前进入 `P6.5 Public Beta Release`
+- `P6.5` 已完成
+- 当前进入 `P7 Local Session Interaction UI`
 
 ## Agent 任务模板
 
-以下模板保留为 `P6` 收口阶段归档模板，用于后续回看拆分方式；不代表当前阶段回退，项目当前已进入 `P6.5 Public Beta Release`。
+以下模板保留为 `P6` 收口阶段归档模板，用于后续回看拆分方式；不代表当前阶段回退，项目当前已进入 `P7 Local Session Interaction UI`。
 
 推荐模板：
 
@@ -1147,4 +1221,4 @@ bash scripts/install-systemd-user.sh --start
 
 ## 总结
 
-`P0-P6` 已完成。当前阶段已切换到 `P6.5 Public Beta Release`。后续顺序保持为 `P6.5 -> P7 -> P8 -> V2 Claude`，不回退既有 `relay`、desktop MVP、hosted session CLI 与 multi-remote approval / session 一致性规则，也不把当前 recovery contract 误写成已实现恢复系统。
+`P0-P6.5` 已完成。当前阶段已切换到 `P7 Local Session Interaction UI`。后续顺序保持为 `P7 -> P8 -> P9 -> P10 -> V2 Claude`，不回退既有 `relay`、desktop MVP、hosted session CLI 与 multi-remote approval / session 一致性规则，也不把当前 recovery contract 误写成已实现恢复系统。
