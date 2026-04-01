@@ -9,6 +9,7 @@
 - 已完成阶段：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P5`、`P6`
 - 已完成子阶段：`P4.5-A Relay Integration`、`P4.5-B Session CLI`、`P4.5-C Hosted Session Contract`、`P4.5-D Recovery Contract`、`P5-1 Server Registry`、`P5-1.5 Approval Identity Hardening`、`P5-2 Desktop Multi-Remote View`、`P5-3 Remote Status Marking`、`P6-1 Platform Assumption Audit`、`P6-2 Runbook And Text Policy Cleanup`、`P6-3 Boundary Cleanup`
 - 当前阶段：`P6.5 Public Beta Release`
+- 当前子目标：`P6.5-3 Remote-Agent Trial Install Surface`
 - 当前节点：`P6.5 Public Beta Release`
 - 下一节点：`P7 Codex Support`
 - 下一阶段：`P7 Codex Support`
@@ -214,8 +215,9 @@ flowchart LR
 
 ## 首次公开 Beta 发布面
 
-`P6.5-1` 将第一次公开 Beta 固定为面向技术试用者的最小
-source-run Beta，而不是带 installer 的完整桌面产品。
+`P6.5-1` 与 `P6.5-2` 已完成，并已将第一次公开 Beta 固定为面向技术试用者的
+最小 source-run Beta，而不是带 installer 的完整桌面产品。
+当前子目标已切换为 `P6.5-3 Remote-Agent Trial Install Surface`。
 
 本次 Beta 包含：
 
@@ -256,6 +258,61 @@ source-run Beta，而不是带 installer 的完整桌面产品。
 - `relay`：作为本地 operator-run FastAPI 进程交付，是 Beta 必需组件，
   不是云服务，也不是单独托管产品
 
+desktop 首发交付基线：
+
+- 交付形态：首发公开 Beta 只交付 repo 内 `desktop/` 源码目录，保持
+  source-run，不额外产出 installer、独立 exe 或签名分发包
+- 启动命令：`cd desktop`、`npm install`、`npm start`
+- 最小依赖：本地 Windows、Node.js 与 npm、仓库副本，以及一个已启动且
+  可访问的本地 `relay`
+- relay 连接假设：`desktop` 当前只连一个 relay；默认目标是
+  `http://127.0.0.1:8000`，需要覆盖时通过 `RELAY_BASE_URL` 显式指定；
+  `desktop` 不负责自动拉起 `relay`
+- 额外打包要求：首发公开 Beta 当前不要求额外打包；`desktop/package.json`
+  当前只有 `start` 与 `dev` 运行脚本，没有正式 build / package 交付面
+- source-run 当前可接受的原因：首发公开 Beta 面向技术试用者，当前优先验证
+  本地控制面、multi-remote 视图与 approval 流程，而不是提前承诺 installer、
+  签名、自动更新与平台分发体验
+- desktop 当前不承诺：installer、MSI/EXE 安装包、代码签名、自动更新、
+  打包后单文件分发、内置 relay 引导启动
+
+remote-agent 首发试用安装基线：
+
+- 交付形态：首发公开 Beta 继续交付 repo 内 `remote-agent/` 源码目录、
+  `deploy/` 模板与 `scripts/install-systemd-user.sh`，保持 source-install
+- 远端安装方式：将 `remote-agent/` 目录放到远端 Linux 主机后执行
+  `bash scripts/install-systemd-user.sh --start`
+- `systemd --user` 启动方式：首发试用仍以 user service 为唯一正式长期运行面；
+  常用命令是 `systemctl --user start/stop/restart/status remote-agent.service`
+- 已提供的安装/启动帮助：
+  - 安装脚本会创建 venv、执行 `python -m pip install -e <workdir>`、
+    写入基础 env、渲染 service 文件、`daemon-reload`、`enable`，
+    并在 `--start` 下启动服务
+  - 仓库已提供 env example、service template 与 install script
+- 仍需试用者手工完成：
+  - 在 `~/.config/remote-agent/remote-agent.env` 中补充
+    `REMOTE_AGENT_RELAY_ENDPOINT`
+  - 补充 `REMOTE_AGENT_CONTROL_BASE_URL`
+  - 建议补充 `REMOTE_AGENT_REMOTE_NAME`
+  - 确认本地 `relay` 可从远端访问，且本地 `relay` 可回连远端控制地址
+- 必需环境变量：
+  - 脚本自动写入：`REMOTE_AGENT_HOST`、`REMOTE_AGENT_PORT`、
+    `REMOTE_AGENT_LOG_LEVEL`、`REMOTE_AGENT_LOG_FILE`
+  - 试用者手工补充：`REMOTE_AGENT_RELAY_ENDPOINT`、
+    `REMOTE_AGENT_CONTROL_BASE_URL`
+  - multi-remote 试用建议手工补充：`REMOTE_AGENT_REMOTE_NAME`
+- Kimi provider binary 发现方式：
+  - 默认依赖 PATH 中可执行的 `kimi`
+  - 非 PATH 安装时，显式设置 `KIMI_BIN`，或在启动命令中传
+    `--kimi-bin`
+- 最小验证命令：
+  - `systemctl --user status remote-agent.service --no-pager`
+  - `remote-agent sessions`
+  - `remote-agent kimi start --task "..." [--kimi-bin ...]`
+  - `tail -n 50 ~/.local/state/remote-agent/remote-agent.log`
+- remote-agent 当前不承诺：一键全自动安装、自动写完 relay/control env、
+  非 Linux deploy 面、PyPI 包、系统发行包、provider 恢复系统
+
 最小试用前提：
 
 - 试用者需要能操作 Python、npm、SSH 与 `systemd --user`
@@ -269,6 +326,8 @@ source-run Beta，而不是带 installer 的完整桌面产品。
 当前公开 Beta 已知限制：
 
 - 远端 `remote-agent` 试用当前仍需要手工补充 relay / control 相关环境变量
+- `install-systemd-user.sh` 当前只自动写基础 host / port / log env，不自动完成
+  relay / control / remote-name 试用配置
 - `watch` 不是持续 follow
 - `attach` 未实现
 - `stop` 不能在 `approval_pending` 或 turn 运行中执行
@@ -477,6 +536,10 @@ npm install
 npm start
 ```
 
+首发公开 Beta 的 desktop 交付基线保持 source-run；当前没有额外
+build / package / installer 步骤。
+桌面端的最小交付说明见 `desktop/README.md`。
+
 默认 `desktop` 读取 `http://127.0.0.1:8000`；如需覆盖，可设置
 `RELAY_BASE_URL`。
 
@@ -514,6 +577,33 @@ REMOTE_AGENT_REMOTE_NAME=<unique-remote-id>
 cd remote-agent
 bash scripts/install-systemd-user.sh --start
 ```
+
+当前 install script 已提供的帮助：
+
+- 创建 venv
+- 从当前 workdir 执行 `python -m pip install -e`
+- 写入基础 host / port / log env
+- 渲染 `systemd --user` service 文件
+- 执行 `daemon-reload`、`enable`，并在 `--start` 时启动服务
+
+当前仍需试用者手工完成：
+
+- 补充 `REMOTE_AGENT_RELAY_ENDPOINT`
+- 补充 `REMOTE_AGENT_CONTROL_BASE_URL`
+- 建议补充 `REMOTE_AGENT_REMOTE_NAME`
+- 确认远端到本地 relay、以及本地 relay 到远端 control base URL 的连通性
+- 确认 `kimi` 已在 PATH 中，或显式配置 `KIMI_BIN`
+
+最小验证命令：
+
+```text
+systemctl --user status remote-agent.service --no-pager
+remote-agent sessions
+remote-agent kimi start --task "..."
+tail -n 50 ~/.local/state/remote-agent/remote-agent.log
+```
+
+remote-agent 试用安装面的最小说明见 `remote-agent/README.md`。
 
 ## 维护者说明
 

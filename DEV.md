@@ -44,7 +44,7 @@
 
 - 已完成：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P4.5-A`、`P4.5-B`、`P4.5-C`、`P4.5-D`、`P5`、`P5-1`、`P5-1.5`、`P5-2`、`P5-3`、`P6-1`、`P6-2`、`P6-3`、`P6`
 - 当前阶段：`P6.5 Public Beta Release`
-- 当前子目标：`P6.5-1 Release Surface Definition`
+- 当前子目标：`P6.5-3 Remote-Agent Trial Install Surface`
 - 当前节点：`P6.5 Public Beta Release`
 - 下一节点：`P7 Codex Support`
 - 下一阶段：`P7 Codex Support`
@@ -53,9 +53,11 @@
 当前主线已完成 `P5 Multi-Remote` 与 `P6 跨平台清理` 收口，当前进入 `P6.5 Public Beta Release`。
 当前阶段也不以实时聊天 UI 或推理链可视化作为主目标；后续实时会话控制属于平台增强能力，不改变控制平面的产品定位。
 `P6-1`、`P6-2` 与 `P6-3` 已完成；`P6` 整体已完成，阶段收口记录见 `P6_worklog.md`。
-`P6.5` 当前先做 `P6.5-1 Release Surface Definition`：先固定第一次公开
-Beta 的包含组件、交付形态、平台矩阵、最小启动路径与已知限制，再进入
-后续打包、文档、截图、issue 模板与 release notes 收口。
+`P6.5-1 Release Surface Definition` 与
+`P6.5-2 Desktop Delivery Baseline` 已完成；当前转入
+`P6.5-3 Remote-Agent Trial Install Surface`，优先固定远端试用安装、
+配置、启动与验证的最小路径，为后续 `P6.5-4 Quick Start And Trial Docs`
+提供稳定输入。
 
 ## 当前融合原则
 
@@ -547,7 +549,7 @@ remote-agent kimi start --task "重构 auth 模块"
 
 - 当前阶段
 - 当前节点：`P6.5 Public Beta Release`
-- 当前子目标：`P6.5-1 Release Surface Definition`
+- 当前子目标：`P6.5-3 Remote-Agent Trial Install Surface`
 
 ### 目标
 
@@ -590,6 +592,8 @@ remote-agent kimi start --task "重构 auth 模块"
 
 `P6.5-1` 的职责不是打包，而是先把第一次公开 Beta 的 release surface
 定义收稳，避免后续打包、文档与对外表述继续漂移。
+`P6.5-1` 已完成；后续已依次进入 `P6.5-2`，当前子目标为
+`P6.5-3 Remote-Agent Trial Install Surface`。
 
 此次定义固定为：
 
@@ -634,6 +638,98 @@ remote-agent kimi start --task "重构 auth 模块"
   - 当前交付形态是 repo 内 `relay/` FastAPI 入口
   - 当前运行口径是用户在本地手工启动的单进程服务
   - 当前不是云服务、托管服务，也不是单独产品线
+
+### P6.5-2 Desktop Delivery Baseline
+
+`P6.5-2` 的职责是冻结首发公开 Beta 的 desktop 交付基线，而不是提前进入
+installer、签名包或自动更新阶段。
+`P6.5-2` 已完成；当前子目标已前推到 `P6.5-3 Remote-Agent Trial Install Surface`。
+
+此次冻结为：
+
+- `desktop` 继续以 repo 内 `desktop/` 源码目录交付
+- 当前桌面端启动命令固定为 `cd desktop && npm install && npm start`
+- 当前 `desktop/package.json` 只暴露 `start` 与 `dev` 运行脚本；没有正式
+  build / package / make 脚本
+- desktop 首发公开 Beta 的本地交付平台保持为 Windows
+- desktop 当前依赖一个已启动的本地 `relay`，不负责自动拉起 relay
+- desktop 当前默认连接 `http://127.0.0.1:8000`，如需覆盖，使用
+  `RELAY_BASE_URL`
+
+source-run 在首发公开 Beta 中仍可接受，原因是：
+
+- 首发试用对象是技术试用者，不是大众分发用户
+- 当前更需要验证本地控制面、multi-remote 展示与 approval 流程闭环
+- 现在提前承诺 installer、签名与自动更新，会把未稳定的分发面误写成已交付
+- 当前 repo 已具备可重复执行的最小桌面启动路径，足以支撑公开 Beta 试用
+
+desktop 首发公开 Beta 的不承诺项：
+
+- installer
+- `exe` / `msi` 安装包
+- 代码签名
+- 自动更新
+- 独立桌面分发包
+- 内置 relay bootstrap
+- 将 Windows 之外的平台写成首发已交付
+
+`P6.5-2` 完成后，后续 `P6.5-3` 应在此基线上继续处理远端试用安装面，而不再
+回头重新定义 desktop 的首发交付形态。
+
+### P6.5-3 Remote-Agent Trial Install Surface
+
+`P6.5-3` 的职责是冻结首发公开 Beta 的 remote-agent 试用安装面，而不是把
+当前仍需手工完成的远端配置步骤伪装成“已自动化安装”。
+
+此次冻结为：
+
+- `remote-agent` 继续以 repo 内 `remote-agent/` 源码目录交付
+- 首发试用安装方式固定为：将目录复制到远端 Linux 主机后执行
+  `bash scripts/install-systemd-user.sh --start`
+- 首发长期运行面固定为 `systemd --user`
+- provider 范围不变，仍仅覆盖 `Kimi --wire`
+
+脚本当前已提供的安装/启动帮助：
+
+- 创建 venv
+- 从当前 workdir 执行 `python -m pip install -e`
+- 写入基础 env：
+  - `REMOTE_AGENT_HOST`
+  - `REMOTE_AGENT_PORT`
+  - `REMOTE_AGENT_LOG_LEVEL`
+  - `REMOTE_AGENT_LOG_FILE`
+- 渲染 `~/.config/systemd/user/remote-agent.service`
+- 执行 `systemctl --user daemon-reload`
+- 执行 `systemctl --user enable remote-agent.service`
+- 在 `--start` 下执行 `systemctl --user restart remote-agent.service`
+- 尝试确保 linger；若失败，明确报错而不是假装 logout-safe hosting 已就绪
+
+当前仍需试用者手工完成的部分：
+
+- 编辑 `~/.config/remote-agent/remote-agent.env`
+- 补充 `REMOTE_AGENT_RELAY_ENDPOINT`
+- 补充 `REMOTE_AGENT_CONTROL_BASE_URL`
+- multi-remote 试用时建议补充 `REMOTE_AGENT_REMOTE_NAME`
+- 确认远端到本地 relay 的可达性
+- 确认本地 relay 到远端 control base URL 的可回连性
+- 确认 `kimi` 已在 PATH 中，或显式提供 `KIMI_BIN`
+
+Kimi provider binary 发现方式固定为：
+
+- 先用命令行 `--kimi-bin`
+- 再用环境变量 `KIMI_BIN`
+- 最后用 PATH 中的 `kimi`
+- 当前不再使用 Linux home fallback 探测 provider 二进制
+
+最小验证命令固定为：
+
+- `systemctl --user status remote-agent.service --no-pager`
+- `remote-agent sessions`
+- `remote-agent kimi start --task "..." [--kimi-bin ...]`
+- `tail -n 50 ~/.local/state/remote-agent/remote-agent.log`
+
+`P6.5-3` 完成后，后续 `P6.5-4` 应把 desktop 与 remote-agent 两侧都当作
+已冻结输入，再产出完整试用路径；不再回头重定义试用安装面本身。
 
 ### relay 在首发 Beta 中的定位
 
@@ -684,7 +780,10 @@ remote-agent kimi start --task "重构 auth 模块"
 - `install-systemd-user.sh` 当前不会自动写入 `REMOTE_AGENT_RELAY_ENDPOINT`、
   `REMOTE_AGENT_CONTROL_BASE_URL` 或 `REMOTE_AGENT_REMOTE_NAME`；首发 Beta
   试用仍需手工补充
+- `install-systemd-user.sh` 当前只自动写基础 host / port / log env，不自动完成
+  relay / control / remote-name 试用配置
 - `desktop` 当前是 source-run 交付，不是安装包
+- `desktop` 当前没有 build / package / installer 脚本
 - `relay` 当前是本地手工启动进程，不是后台自启动服务
 - `watch` 当前是单次读取，不是持续 follow
 - `attach` 当前未实现
@@ -697,7 +796,9 @@ remote-agent kimi start --task "重构 auth 模块"
 
 - 一份明确写清“包含什么 / 不包含什么”的根目录 `README.md`
 - 一份明确写清发布边界、平台矩阵与后续顺序的根目录 `DEV.md`
-- 一份冻结 `P6.5-1` 口径的 `P6.5_worklog.md`
+- 一份冻结 `P6.5-1`、`P6.5-2` 与 `P6.5-3` 口径的 `P6.5_worklog.md`
+- 一份最小 `desktop/README.md`，明确 desktop 交付形态、启动方式与不承诺项
+- 一份最小 `remote-agent/README.md`，明确试用安装面、手工步骤与最小验证命令
 - 一条可操作的最小 Quick Start：本地 `relay + desktop`，远端
   `remote-agent + Kimi`
 - 一份明确的支持矩阵与已知限制列表
@@ -707,9 +808,13 @@ remote-agent kimi start --task "重构 auth 模块"
 
 ### 建议后续子任务顺序
 
+当前已进入列表中的 `P6.5-3 Remote-Agent Trial Install Surface`。
+当前任务完成后，`P6.5-4` 应直接承接 Quick Start 试用路径，而不是回头继续
+重写 remote-agent 试用安装面。
+
 1. `P6.5-2 Desktop Delivery Baseline`
    - 固定 desktop 首发交付形态
-   - 决定是否保持纯 source-run，或补最小压缩包分发
+   - 明确 source-run 仍可接受的原因与边界
    - 不进入完整 installer
 2. `P6.5-3 Remote-Agent Trial Install Surface`
    - 收口远端试用安装路径
@@ -904,6 +1009,10 @@ cd desktop
 npm install
 npm start
 ```
+
+首发公开 Beta 的 desktop 交付基线保持 source-run；当前没有额外
+build / package / installer 步骤。
+桌面端的最小交付说明见 `desktop/README.md`。
 
 默认 `desktop` 读取 `http://127.0.0.1:8000`；如需覆盖，可设置
 `RELAY_BASE_URL`。

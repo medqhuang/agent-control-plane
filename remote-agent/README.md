@@ -25,6 +25,23 @@ Current gaps before `P4.5` can close:
 - ASGI runtime with `uvicorn`
 - remote long-running process via `systemctl --user`
 
+## P6.5-3 Trial Install Baseline
+
+The first public Beta trial install surface is fixed as:
+
+- delivery shape: repo-local `remote-agent/` source directory
+- remote target platform: Linux only
+- install path: copy the directory to the remote host, then run
+  `bash scripts/install-systemd-user.sh --start`
+- long-running service shape: `systemd --user`
+- provider scope: `Kimi --wire` only
+- current distribution boundary: source-install only; no PyPI package, no OS
+  package, and no installer
+
+The current trial install surface is intentionally narrower than a polished
+distribution flow. It is a technical trial path, not a finished packaging
+story.
+
 ## Install
 
 ```bash
@@ -68,6 +85,31 @@ The repo includes:
 - env example: `deploy/remote-agent.env.example`
 - install script: `scripts/install-systemd-user.sh`
 
+### What The Install Script Already Does
+
+- create a venv at `~/.venvs/agent-control-plane`
+- install `remote-agent` in editable mode from the current workdir
+- write `~/.config/remote-agent/remote-agent.env` with base host / port / log
+  values
+- render `~/.config/systemd/user/remote-agent.service`
+- run `systemctl --user daemon-reload`
+- run `systemctl --user enable remote-agent.service`
+- optionally start the service when `--start` is passed
+- attempt to enable linger before claiming logout-safe hosting
+
+### What Still Requires Manual Trial Configuration
+
+- open `~/.config/remote-agent/remote-agent.env`
+- add `REMOTE_AGENT_RELAY_ENDPOINT`
+- add `REMOTE_AGENT_CONTROL_BASE_URL`
+- preferably add `REMOTE_AGENT_REMOTE_NAME`
+- confirm the remote host can reach the local relay
+- confirm the local relay can reach the remote control base URL
+- confirm `kimi` is in PATH, or provide `KIMI_BIN`
+
+For the first public Beta, these steps must stay documented as manual. They
+must not be described as already automated installation behavior.
+
 ### Install On A Remote Linux Host
 
 Copy this directory to the remote host, then run:
@@ -87,6 +129,35 @@ The install script will:
 - run `systemctl --user enable remote-agent.service`
 - optionally start the service when `--start` is passed
 
+### Required Trial Env Additions
+
+After the install script writes the base env file, trial users still need to
+add at least:
+
+```bash
+REMOTE_AGENT_RELAY_ENDPOINT=http://<local-relay-host>:8000
+REMOTE_AGENT_CONTROL_BASE_URL=http://<remote-host>:8711
+REMOTE_AGENT_REMOTE_NAME=<unique-remote-id>
+```
+
+Use these rules:
+
+- `REMOTE_AGENT_RELAY_ENDPOINT` is required for remote-agent standard events to
+  reach the local relay
+- `REMOTE_AGENT_CONTROL_BASE_URL` must be reachable from the local relay; do
+  not leave this implied as `127.0.0.1`
+- `REMOTE_AGENT_REMOTE_NAME` is strongly recommended for multi-remote trials
+
+### Kimi Binary Discovery
+
+The current Beta trial path resolves Kimi in this order:
+
+1. `remote-agent kimi start --kimi-bin ...`
+2. `KIMI_BIN`
+3. PATH lookup for `kimi`
+
+There is no Linux-home provider fallback in shared runtime anymore.
+
 ### Service Commands
 
 ```bash
@@ -97,6 +168,20 @@ systemctl --user status remote-agent.service --no-pager
 tail -n 50 ~/.local/state/remote-agent/remote-agent.log
 tail -f ~/.local/state/remote-agent/remote-agent.log
 ```
+
+### Minimal Trial Verification Commands
+
+These commands validate only the remote install surface:
+
+```bash
+systemctl --user status remote-agent.service --no-pager
+remote-agent sessions
+remote-agent kimi start --task "refactor auth module"
+tail -n 50 ~/.local/state/remote-agent/remote-agent.log
+```
+
+If `kimi` is not in PATH, pass `--kimi-bin /path/to/kimi` on the start
+command.
 
 ## Current Service APIs
 
