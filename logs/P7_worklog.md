@@ -1,0 +1,28 @@
+# P7 Worklog
+
+- 状态前推：
+  - `P7-A Desktop Session Detail And Transcript` 已完成。
+  - 当前下一子目标固定为 `P7-B Desktop Reply Submission And Relay Session Interaction Route`。
+  - 文档状态已前推到 `P7-B`，未前推到 `P8`。
+- 本轮交付：
+  - relay 新增 `GET /v1/sessions/{session_id}/detail`，供 desktop 通过 relay 读取 hosted session detail。
+  - relay detail 路由会先按 `session_id + remote_id` 从本地 session store 定位 session，再基于现有 session 的 `control.base_url` 或 registry 中的 `remote_id -> endpoint` 解析到正确的 `remote-agent`。
+  - desktop 新增 session 选中态与 detail 面板；点击 session list 中的某个 hosted session 后，会通过 relay 拉取 detail 并展示基本元数据。
+  - desktop detail 面板当前至少展示最近一轮输入与最近回复/最小 transcript。
+- transcript / recent reply 的真实来源：
+  - 最近一轮输入：`detail.session.last_turn.message`
+  - 最近一轮 turn 状态：`detail.session.last_turn.status`
+  - 最近回复内容：优先从 `detail.provider_observation.prompt_result` 或 `detail.session.last_turn.prompt_result` 中提取直接文本字段
+  - 无直接回复文本时：truthfully 回退为 `prompt_result` 或 `approval_request` 的原始 JSON 片段展示，不伪造完整聊天工作台
+  - hosted session 基本元数据：来自 relay 返回的 `session` 与 remote-agent detail 中的 `detail.session`
+- 本轮故意不做：
+  - desktop reply 提交
+  - relay session interaction reply 路由
+  - `attach`
+  - 通用聊天 UI、推理链可视化、token 流透传
+  - `Codex`、`Claude`、`P8`、`P9`、`P10`
+  - checkpoint、replay、`remote-agent` 重启恢复等恢复能力前置
+- 回归约束：
+  - 保持现有 session list / approvals / multi-remote 视图不回退
+  - 保持 remote shell CLI `sessions / watch / reply / stop` 不回退
+  - 不改变 approval 的 `remote_id + request_id` 唯一定位语义

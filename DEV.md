@@ -44,10 +44,8 @@
 
 - 已完成：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P4.5-A`、`P4.5-B`、`P4.5-C`、`P4.5-D`、`P5`、`P5-1`、`P5-1.5`、`P5-2`、`P5-3`、`P6-1`、`P6-2`、`P6-3`、`P6`、`P6.5`
 - 当前阶段：`P7 Local Session Interaction UI`
-- 当前子目标：`P7 Local Session Interaction UI`
-- 当前节点：`P7-A Desktop Session Detail And Transcript`
-- 下一节点：`P8 V1.0 Release`
-- 下一阶段：`P8 V1.0 Release`
+- 当前子目标：`P7-B Desktop Reply Submission And Relay Session Interaction Route`
+- 已完成子目标：`P7-A Desktop Session Detail And Transcript`
 - `V1` 暂不接入 `Claude Code`
 
 当前主线已完成 `P5 Multi-Remote`、`P6 跨平台清理` 与 `P6.5 Public Beta Release`
@@ -925,6 +923,11 @@ Kimi provider binary 发现方式固定为：
 `P7` 是 `V1` 范围内的产品闭环阶段，不是可选增强项。
 
 如果没有本地 UI 交互入口，`remote-agent kimi start --task "..."` 在返回 shell 后会把后续使用能力只留在远端 CLI 上，产品就无法完整承接 hosted session 的持续使用。
+
+### 当前拆分
+
+- `P7-A` 已完成：`Desktop Session Detail And Transcript`
+- `P7-B` 当前：`Desktop Reply Submission And Relay Session Interaction Route`
 
 ### 范围
 

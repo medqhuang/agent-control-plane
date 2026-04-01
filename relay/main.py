@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+from datetime import timezone
 from threading import Lock
 from typing import Literal
 
@@ -20,6 +22,8 @@ from relay.approval_store import upsert_pending_approval_from_remote_event
 from relay.approval_store import upsert_pending_approval_request
 from relay.event_log import append_approval_response_event
 from relay.event_log import get_next_event_seq
+from relay.remote_agent_client import RemoteAgentHttpError
+from relay.remote_agent_client import get_session_detail as get_remote_agent_session_detail
 from relay.remote_agent_client import post_approval_response as post_remote_agent_approval
 from relay.server_registry import enrich_approval
 from relay.server_registry import enrich_session
@@ -28,6 +32,7 @@ from relay.server_registry import observe_approval_request
 from relay.server_registry import observe_remote_event
 from relay.session_store import get_session
 from relay.session_store import list_sessions
+from relay.session_store import public_session
 from relay.session_store import sync_session_status_from_approval
 from relay.session_store import upsert_session_from_approval_request
 from relay.session_store import upsert_session_from_remote_event
@@ -93,6 +98,83 @@ def get_snapshot() -> dict[str, object]:
 @app.get("/v1/servers")
 def get_servers() -> dict[str, list[dict[str, object]]]:
     return {"servers": list_servers()}
+
+
+@app.get("/v1/sessions/{session_id}/detail")
+def get_hosted_session_detail(
+    session_id: str,
+    remote_id: str = "",
+) -> dict[str, object]:
+    target_remote_id = remote_id.strip() or None
+    try:
+        session = get_session(session_id, remote_id=target_remote_id)
+    except LookupError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": "session_id is ambiguous across multiple remotes; provide remote_id",
+                "session_id": session_id,
+            },
+        ) from exc
+    if session is None:
+        raise HTTPException(status_code=404, detail="session not found")
+
+    normalized_remote_id = str(session.get("remote_id") or session.get("remote") or "")
+
+    try:
+        detail_result = get_remote_agent_session_detail(session=session)
+    except TimeoutError as exc:
+        raise HTTPException(
+            status_code=504,
+            detail={
+                "message": "remote-agent session detail request timed out",
+                "session_id": session_id,
+                "remote_id": normalized_remote_id,
+                "reason": str(exc),
+            },
+        ) from exc
+    except RemoteAgentHttpError as exc:
+        if exc.http_status == 404:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "message": "hosted session not found on remote-agent",
+                    "session_id": session_id,
+                    "remote_id": normalized_remote_id,
+                    "remote_http_status": exc.http_status,
+                },
+            ) from exc
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "remote-agent session detail request failed",
+                "session_id": session_id,
+                "remote_id": normalized_remote_id,
+                "remote_http_status": exc.http_status,
+                "reason": exc.detail,
+            },
+        ) from exc
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "remote-agent session detail request failed",
+                "session_id": session_id,
+                "remote_id": normalized_remote_id,
+                "reason": str(exc),
+            },
+        ) from exc
+
+    return {
+        "session": enrich_session(public_session(session)),
+        "detail": detail_result["result"],
+        "proxy": {
+            "remote_id": normalized_remote_id,
+            "base_url": detail_result["base_url"],
+            "http_status": detail_result["http_status"],
+        },
+        "fetched_at": _utc_now(),
+    }
 
 
 @app.post("/v1/remote-agent/events")
@@ -245,3 +327,7 @@ def post_approval_response(
             "idempotent": False,
             "provider_writeback": provider_writeback,
         }
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")

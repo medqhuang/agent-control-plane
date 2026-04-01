@@ -7,12 +7,10 @@
 ## 项目状态
 
 - 已完成阶段：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P5`、`P6`、`P6.5`
-- 已完成子阶段：`P4.5-A Relay Integration`、`P4.5-B Session CLI`、`P4.5-C Hosted Session Contract`、`P4.5-D Recovery Contract`、`P5-1 Server Registry`、`P5-1.5 Approval Identity Hardening`、`P5-2 Desktop Multi-Remote View`、`P5-3 Remote Status Marking`、`P6-1 Platform Assumption Audit`、`P6-2 Runbook And Text Policy Cleanup`、`P6-3 Boundary Cleanup`
-- 当前阶段：`P7 Local Session Interaction UI`
-- 当前子目标：`P7 Local Session Interaction UI`
-- 当前节点：`P7-A Desktop Session Detail And Transcript`
+- 当前节点：`P7-B Desktop Reply Submission And Relay Session Interaction Route`
+- 已完成节点：`P7-A Desktop Session Detail And Transcript`
 - 下一节点：`P8 V1.0 Release`
-- 下一阶段：`P8 V1.0 Release`
+
 - `V1` 主线：`Kimi` + `remote-agent` + `Multi-Remote` + `Local Session Interaction UI`
 - `V2` 计划：`Claude Code`
 
@@ -26,10 +24,6 @@
 - `P3` 本地控制端 MVP
 - `P4` Remote-Agent Foundation
 - `P4.5` Hosted Session Usability
-- `P4.5-A` Relay Integration
-- `P4.5-B` Session CLI
-- `P4.5-C` Hosted Session Contract
-- `P4.5-D` Recovery Contract
 - `P5` Multi-Remote
 - `P6` 跨平台清理
 
@@ -620,6 +614,11 @@ approval request”。
 - 本地查看最近一轮 hosted session 的回复内容
 - 本地对已托管 session 提交 `reply`
 - 让 session 状态、approval 与后续交互在本地控制端形成同一条闭环
+
+当前阶段拆分为：
+
+- `P7-A` 已完成：`Desktop Session Detail And Transcript`
+- `P7-B` 当前目标：`Desktop Reply Submission And Relay Session Interaction Route`
 
 `P7` 明确不要求：
 

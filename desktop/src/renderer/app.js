@@ -1,5 +1,6 @@
 import { renderRemoteList } from "./features/remotes/render-remote-list.js";
 import { renderApprovalList } from "./features/approvals/render-approval-list.js";
+import { renderSessionDetail } from "./features/sessions/render-session-detail.js";
 import { renderSessionList } from "./features/sessions/render-session-list.js";
 import { createSnapshotStore } from "./state/snapshot-store.js";
 
@@ -16,6 +17,7 @@ const elements = {
   sessionCount: document.querySelector("#session-count"),
   approvalCount: document.querySelector("#approval-count"),
   sessionList: document.querySelector("#session-list"),
+  sessionDetail: document.querySelector("#session-detail"),
   approvalList: document.querySelector("#approval-list"),
 };
 
@@ -27,6 +29,28 @@ const statusLabels = {
 };
 
 const store = createSnapshotStore();
+
+function readRecordField(record, fieldName, fallback = "") {
+  if (!record || typeof record !== "object") {
+    return fallback;
+  }
+
+  const value = record[fieldName];
+  if (value === null || value === undefined) {
+    return fallback;
+  }
+
+  const normalizedValue = String(value).trim();
+  return normalizedValue === "" ? fallback : normalizedValue;
+}
+
+function buildSessionKey(session) {
+  return `${readRecordField(
+    session,
+    "remote_id",
+    readRecordField(session, "remote", ""),
+  )}::${readRecordField(session, "id", "")}`;
+}
 
 function formatLastUpdated(value) {
   if (!value) {
@@ -50,6 +74,9 @@ function renderApp(state) {
   );
   const hasApprovalAction =
     Object.keys(state.approvalActionByKey).length > 0;
+  const selectedSession = sessions.find((session) =>
+    buildSessionKey(session) === state.selectedSessionKey
+  ) || null;
 
   elements.relayEndpoint.textContent = state.relayBaseUrl || "-";
   elements.lastUpdated.textContent = formatLastUpdated(state.lastUpdated);
@@ -64,7 +91,15 @@ function renderApp(state) {
     sessions,
     approvals,
   });
-  renderSessionList(elements.sessionList, sessions);
+  renderSessionList(elements.sessionList, sessions, {
+    selectedSessionKey: state.selectedSessionKey,
+  });
+  renderSessionDetail(elements.sessionDetail, {
+    selectedSession,
+    sessionDetail: state.sessionDetail,
+    sessionDetailLoading: state.sessionDetailLoading,
+    sessionDetailError: state.sessionDetailError,
+  });
   renderApprovalList(elements.approvalList, pendingApprovals, {
     approvalActionByKey: state.approvalActionByKey,
   });
@@ -81,6 +116,27 @@ function renderApp(state) {
 
 elements.refreshButton.addEventListener("click", () => {
   store.refresh();
+});
+
+elements.sessionList.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-session-id]");
+  if (!button) {
+    return;
+  }
+
+  const {
+    sessionId,
+    remoteId = "",
+  } = button.dataset;
+  if (!sessionId) {
+    return;
+  }
+
+  try {
+    await store.selectSession(sessionId, remoteId);
+  } catch {
+    // Store state already carries the detail error for the UI.
+  }
 });
 
 elements.approvalList.addEventListener("click", async (event) => {

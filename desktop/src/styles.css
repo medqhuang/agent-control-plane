@@ -155,6 +155,12 @@ h2 {
   gap: 20px;
 }
 
+.side-stack {
+  display: grid;
+  gap: 20px;
+  align-content: start;
+}
+
 .panel {
   padding: 16px;
 }
@@ -196,6 +202,11 @@ h2 {
   border-radius: 10px;
   padding: 12px;
   background: #f8fafc;
+}
+
+.list-item.is-selected {
+  border-color: #60a5fa;
+  background: #eff6ff;
 }
 
 .group-section {
@@ -247,6 +258,10 @@ h2 {
   background: #ffffff;
 }
 
+.group-item-list .list-item.is-selected {
+  background: #eff6ff;
+}
+
 .server-card.is-disconnected,
 .server-card.is-unreachable {
   border-color: #f1d0b5;
@@ -273,6 +288,23 @@ h2 {
   display: grid;
   gap: 8px;
   margin-top: 12px;
+}
+
+.detail-panel-body {
+  display: grid;
+  gap: 16px;
+}
+
+.detail-summary,
+.detail-section {
+  display: grid;
+  gap: 12px;
+}
+
+.subsection-title {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.3;
 }
 
 .detail-row {
@@ -330,6 +362,57 @@ h2 {
 
 .server-grid .empty-state {
   grid-column: 1 / -1;
+}
+
+.session-card-button {
+  display: grid;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.session-card-button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 4px;
+}
+
+.detail-error-message {
+  margin-top: 0;
+}
+
+.transcript-list {
+  display: grid;
+  gap: 12px;
+}
+
+.transcript-entry {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.transcript-label {
+  color: #6b7280;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.transcript-body {
+  margin-top: 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+.transcript-code {
+  margin: 10px 0 0;
+  overflow-x: auto;
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
 }
 
 .list-item.is-busy {

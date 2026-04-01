@@ -32,7 +32,7 @@ _COMPLETED_REMOTE_STATUSES = {"finished", "completed"}
 
 
 def list_sessions() -> list[dict[str, object]]:
-    return [_public_session(session) for session in _SESSIONS_BY_ID.values()]
+    return [public_session(session) for session in _SESSIONS_BY_ID.values()]
 
 
 def get_session(
@@ -175,7 +175,7 @@ def _normalize_control(raw_control: object) -> dict[str, object]:
     }
 
 
-def _public_session(session: Mapping[str, object]) -> dict[str, object]:
+def public_session(session: Mapping[str, object]) -> dict[str, object]:
     return {
         key: value
         for key, value in session.items()

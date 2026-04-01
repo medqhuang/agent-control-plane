@@ -24,6 +24,70 @@ function buildApprovalActionKey(requestId, remoteId = "") {
   return `${String(remoteId || "").trim()}::${String(requestId || "").trim()}`;
 }
 
+function buildSessionKey(sessionId, remoteId = "") {
+  return `${String(remoteId || "").trim()}::${String(sessionId || "").trim()}`;
+}
+
+function readRecordField(record, fieldName, fallback = "") {
+  if (!record || typeof record !== "object") {
+    return fallback;
+  }
+
+  const value = record[fieldName];
+  if (value === null || value === undefined) {
+    return fallback;
+  }
+
+  const normalizedValue = String(value).trim();
+  return normalizedValue === "" ? fallback : normalizedValue;
+}
+
+function buildSessionKeyFromRecord(session) {
+  return buildSessionKey(
+    readRecordField(session, "id", ""),
+    readRecordField(
+      session,
+      "remote_id",
+      readRecordField(session, "remote", ""),
+    ),
+  );
+}
+
+function normalizeSessionIdentity(sessionId, remoteId = "") {
+  const normalizedSessionId = String(sessionId || "").trim();
+  const normalizedRemoteId = String(remoteId || "").trim();
+
+  if (normalizedSessionId === "") {
+    throw new Error("session_id is required");
+  }
+
+  return {
+    sessionId: normalizedSessionId,
+    remoteId: normalizedRemoteId,
+  };
+}
+
+function normalizeSessionDetail(detail) {
+  if (!detail || typeof detail !== "object") {
+    return null;
+  }
+
+  return {
+    session: detail.session && typeof detail.session === "object"
+      ? detail.session
+      : {},
+    detail: detail.detail && typeof detail.detail === "object"
+      ? detail.detail
+      : {},
+    proxy: detail.proxy && typeof detail.proxy === "object"
+      ? detail.proxy
+      : {},
+    fetchedAt: typeof detail.fetched_at === "string"
+      ? detail.fetched_at
+      : "",
+  };
+}
+
 function getConnectionStatusForRefreshError(error) {
   const message = error instanceof Error ? error.message : String(error);
   const normalizedMessage = message.toLowerCase();
@@ -43,6 +107,9 @@ function getConnectionStatusForRefreshError(error) {
 export function createSnapshotStore() {
   const listeners = new Set();
   let refreshPromise = null;
+  let sessionDetailPromise = null;
+  let sessionDetailPromiseKey = "";
+  let sessionDetailRequestToken = 0;
   let state = {
     relayBaseUrl: "",
     snapshot: EMPTY_SNAPSHOT,
@@ -50,6 +117,11 @@ export function createSnapshotStore() {
     error: null,
     lastUpdated: null,
     approvalActionByKey: {},
+    selectedSessionKey: "",
+    selectedSession: null,
+    sessionDetail: null,
+    sessionDetailLoading: false,
+    sessionDetailError: null,
   };
 
   function emit() {
@@ -74,6 +146,102 @@ export function createSnapshotStore() {
     return nextActions;
   }
 
+  function clearSelectedSession() {
+    setState({
+      selectedSessionKey: "",
+      selectedSession: null,
+      sessionDetail: null,
+      sessionDetailLoading: false,
+      sessionDetailError: null,
+    });
+  }
+
+  async function refreshSessionDetail(
+    sessionIdentity = state.selectedSession,
+    {
+      preserveData = true,
+      surfaceError = true,
+    } = {},
+  ) {
+    if (!sessionIdentity) {
+      return null;
+    }
+
+    const normalizedSession = normalizeSessionIdentity(
+      sessionIdentity.sessionId,
+      sessionIdentity.remoteId,
+    );
+    const sessionKey = buildSessionKey(
+      normalizedSession.sessionId,
+      normalizedSession.remoteId,
+    );
+
+    if (sessionDetailPromise && sessionDetailPromiseKey === sessionKey) {
+      return sessionDetailPromise;
+    }
+
+    const requestToken = ++sessionDetailRequestToken;
+    sessionDetailPromiseKey = sessionKey;
+
+    setState({
+      selectedSessionKey: sessionKey,
+      selectedSession: normalizedSession,
+      sessionDetail: preserveData && state.selectedSessionKey === sessionKey
+        ? state.sessionDetail
+        : null,
+      sessionDetailLoading: true,
+      sessionDetailError: null,
+    });
+
+    sessionDetailPromise = (async () => {
+      try {
+        const payload = await window.desktopApi.getSessionDetail({
+          sessionId: normalizedSession.sessionId,
+          remoteId: normalizedSession.remoteId,
+        });
+
+        if (
+          requestToken !== sessionDetailRequestToken ||
+          state.selectedSessionKey !== sessionKey
+        ) {
+          return payload;
+        }
+
+        setState({
+          relayBaseUrl: payload.relayBaseUrl || state.relayBaseUrl,
+          sessionDetail: normalizeSessionDetail(payload.detail),
+          sessionDetailLoading: false,
+          sessionDetailError: null,
+        });
+
+        return payload;
+      } catch (error) {
+        if (
+          requestToken === sessionDetailRequestToken &&
+          state.selectedSessionKey === sessionKey
+        ) {
+          setState({
+            sessionDetailLoading: false,
+            sessionDetailError: error instanceof Error ? error.message : String(error),
+          });
+        }
+
+        if (surfaceError) {
+          throw error;
+        }
+
+        return null;
+      } finally {
+        if (sessionDetailPromiseKey === sessionKey) {
+          sessionDetailPromise = null;
+          sessionDetailPromiseKey = "";
+        }
+      }
+    })();
+
+    return sessionDetailPromise;
+  }
+
   async function refresh() {
     if (refreshPromise) {
       return refreshPromise;
@@ -87,14 +255,40 @@ export function createSnapshotStore() {
     refreshPromise = (async () => {
       try {
         const payload = await window.desktopApi.getSnapshot();
+        const normalizedSnapshot = normalizeSnapshot(payload.snapshot);
+        const selectedSession = state.selectedSession;
+        const hasSelectedSession = Boolean(selectedSession);
+        const selectedSessionStillPresent = hasSelectedSession
+          ? normalizedSnapshot.sessions.some((session) =>
+            buildSessionKeyFromRecord(session) === buildSessionKey(
+              selectedSession.sessionId,
+              selectedSession.remoteId,
+            ))
+          : false;
 
         setState({
           relayBaseUrl: payload.relayBaseUrl,
-          snapshot: normalizeSnapshot(payload.snapshot),
+          snapshot: normalizedSnapshot,
           status: "connected",
           error: null,
           lastUpdated: payload.fetchedAt,
+          ...(hasSelectedSession && !selectedSessionStillPresent
+            ? {
+              selectedSessionKey: "",
+              selectedSession: null,
+              sessionDetail: null,
+              sessionDetailLoading: false,
+              sessionDetailError: null,
+            }
+            : {}),
         });
+
+        if (hasSelectedSession && selectedSessionStillPresent) {
+          void refreshSessionDetail(selectedSession, {
+            preserveData: true,
+            surfaceError: false,
+          }).catch(() => {});
+        }
 
         return payload;
       } catch (error) {
@@ -173,6 +367,14 @@ export function createSnapshotStore() {
     }
   }
 
+  async function selectSession(sessionId, remoteId = "") {
+    const sessionIdentity = normalizeSessionIdentity(sessionId, remoteId);
+    return refreshSessionDetail(sessionIdentity, {
+      preserveData: false,
+      surfaceError: true,
+    });
+  }
+
   return {
     getState() {
       return state;
@@ -186,6 +388,8 @@ export function createSnapshotStore() {
     },
 
     refresh,
+    selectSession,
+    clearSelectedSession,
     submitApprovalDecision,
   };
 }

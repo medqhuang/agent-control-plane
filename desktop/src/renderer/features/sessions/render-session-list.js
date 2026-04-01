@@ -73,7 +73,13 @@ function createGroupHeader(title, subtitle, count) {
   return header;
 }
 
-export function renderSessionList(container, sessions) {
+export function renderSessionList(
+  container,
+  sessions,
+  {
+    selectedSessionKey = "",
+  } = {},
+) {
   container.replaceChildren();
 
   const sessionItems = Array.isArray(sessions) ? sessions : [];
@@ -118,8 +124,19 @@ export function renderSessionList(container, sessions) {
     groupList.className = "group-item-list";
 
     for (const session of group.items) {
+      const sessionKey = `${session.remoteId}::${session.id}`;
+      const isSelected = sessionKey === selectedSessionKey;
       const item = document.createElement("li");
-      item.className = "list-item";
+      item.className = isSelected
+        ? "list-item is-selected"
+        : "list-item";
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "session-card-button";
+      button.dataset.sessionId = session.id;
+      button.dataset.remoteId = session.remoteId;
+      button.setAttribute("aria-pressed", String(isSelected));
 
       const title = document.createElement("div");
       title.className = "item-title";
@@ -137,7 +154,8 @@ export function renderSessionList(container, sessions) {
       detail.className = "item-detail";
       detail.textContent = `title: ${session.title}`;
 
-      item.append(title, meta, detail);
+      button.append(title, meta, detail);
+      item.append(button);
       groupList.append(item);
     }
 

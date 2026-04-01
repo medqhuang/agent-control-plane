@@ -95,6 +95,28 @@ async function getSnapshotPayload() {
   };
 }
 
+async function getSessionDetailPayload({
+  sessionId,
+  remoteId = "",
+}) {
+  const relayBaseUrl = getRelayBaseUrl();
+  const detailUrl = new URL(
+    `/v1/sessions/${encodeURIComponent(sessionId)}/detail`,
+    relayBaseUrl,
+  );
+  if (remoteId.trim() !== "") {
+    detailUrl.searchParams.set("remote_id", remoteId.trim());
+  }
+
+  const detail = await requestJson(detailUrl.toString());
+
+  return {
+    relayBaseUrl,
+    fetchedAt: new Date().toISOString(),
+    detail,
+  };
+}
+
 async function submitApprovalDecisionPayload({
   requestId,
   remoteId = "",
@@ -146,6 +168,25 @@ ipcMain.handle("relay:getConfig", async () => {
 
 ipcMain.handle("relay:getSnapshot", async () => {
   return getSnapshotPayload();
+});
+
+ipcMain.handle("relay:getSessionDetail", async (_event, payload) => {
+  if (!payload || typeof payload !== "object") {
+    throw new Error("session detail payload is required");
+  }
+
+  if (typeof payload.sessionId !== "string" || payload.sessionId.trim() === "") {
+    throw new Error("session_id is required");
+  }
+
+  if ("remoteId" in payload && typeof payload.remoteId !== "string") {
+    throw new Error("session remote_id must be a string when provided");
+  }
+
+  return getSessionDetailPayload({
+    sessionId: payload.sessionId.trim(),
+    remoteId: typeof payload.remoteId === "string" ? payload.remoteId : "",
+  });
 });
 
 ipcMain.handle("relay:submitApprovalDecision", async (_event, payload) => {

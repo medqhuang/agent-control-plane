@@ -13,10 +13,10 @@
     <div class="app-shell">
       <header class="topbar">
         <div>
-          <p class="eyebrow">P5 Multi-Remote</p>
+          <p class="eyebrow">P7 Session Interaction</p>
           <h1>Agent Control Plane</h1>
           <p class="subtitle">
-            Electron shell aggregating relay snapshot data across multiple remotes.
+            Electron shell reading relay snapshot data and hosted session detail across multiple remotes.
           </p>
         </div>
         <button id="refresh-button" class="refresh-button" type="button">
@@ -65,16 +65,28 @@
           <ul id="session-list" class="item-list"></ul>
         </section>
 
-        <section class="panel">
-          <div class="panel-header">
-            <div>
-              <p class="eyebrow">Grouped by Remote</p>
-              <h2>Approvals</h2>
+        <div class="side-stack">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Hosted Session</p>
+                <h2>Session Detail</h2>
+              </div>
             </div>
-            <p id="approval-count" class="count-pill">0</p>
-          </div>
-          <ul id="approval-list" class="item-list"></ul>
-        </section>
+            <div id="session-detail" class="detail-panel-body"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Grouped by Remote</p>
+                <h2>Approvals</h2>
+              </div>
+              <p id="approval-count" class="count-pill">0</p>
+            </div>
+            <ul id="approval-list" class="item-list"></ul>
+          </section>
+        </div>
       </main>
     </div>
 
