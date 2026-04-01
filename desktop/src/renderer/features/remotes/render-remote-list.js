@@ -5,6 +5,13 @@ function createMetaPill(label) {
   return pill;
 }
 
+function createRemoteStatusPill(status) {
+  const pill = document.createElement("span");
+  pill.className = `remote-status-pill is-${status}`;
+  pill.textContent = status;
+  return pill;
+}
+
 function createEmptyState(message) {
   const item = document.createElement("li");
   item.className = "empty-state";
@@ -55,6 +62,25 @@ function readStatusFlag(server, flagName) {
   return Boolean(status[flagName]);
 }
 
+function readStatusValue(server, fieldName, fallback) {
+  if (!server || typeof server !== "object") {
+    return fallback;
+  }
+
+  const status = server.status;
+  if (!status || typeof status !== "object") {
+    return fallback;
+  }
+
+  const value = status[fieldName];
+  if (value === null || value === undefined) {
+    return fallback;
+  }
+
+  const normalizedValue = String(value).trim().toLowerCase();
+  return normalizedValue === "" ? fallback : normalizedValue;
+}
+
 function readProviders(server) {
   if (!server || typeof server !== "object" || !Array.isArray(server.providers)) {
     return [];
@@ -93,6 +119,7 @@ function normalizeServer(server, sessions, approvals) {
     configured: readStatusFlag(server, "configured"),
     eventSeen: readStatusFlag(server, "event_seen"),
     writebackReady: readStatusFlag(server, "writeback_ready"),
+    connectionStatus: readStatusValue(server, "connection", "unreachable"),
     lastEventAt: readServerField(server, "last_event_at", "-"),
     sessionCount: countByRemote(sessions, remoteId),
     pendingApprovalCount: countByRemote(
@@ -129,7 +156,7 @@ export function renderRemoteList(
 
   for (const server of normalizedServers) {
     const item = document.createElement("li");
-    item.className = "list-item server-card";
+    item.className = `list-item server-card is-${server.connectionStatus}`;
 
     const title = document.createElement("div");
     title.className = "item-title";
@@ -138,6 +165,7 @@ export function renderRemoteList(
     const meta = document.createElement("div");
     meta.className = "item-meta";
     meta.append(
+      createRemoteStatusPill(server.connectionStatus),
       createMetaPill(`remote: ${server.remoteId}`),
       createMetaPill(`provider: ${server.currentProvider}`),
       createMetaPill(`sessions: ${server.sessionCount}`),

@@ -247,6 +247,11 @@ h2 {
   background: #ffffff;
 }
 
+.server-card.is-disconnected,
+.server-card.is-unreachable {
+  border-color: #f1d0b5;
+}
+
 .item-title {
   font-weight: 600;
 }
@@ -293,6 +298,30 @@ h2 {
   background: #e5e7eb;
   color: #1f2937;
   font-size: 12px;
+}
+
+.remote-status-pill {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.remote-status-pill.is-connected {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.remote-status-pill.is-disconnected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.remote-status-pill.is-unreachable {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .empty-state {

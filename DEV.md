@@ -26,7 +26,7 @@
 ## 全局约束
 
 - `relay` 负责本地聚合状态与 approval 一致性
-- approval 必须使用 `request_id`
+- approval 对外继续使用 `request_id`，但 multi-remote 下必须结合 `remote_id` 唯一定位
 - session 事件必须带顺序信息
 - 超时只能进入 `reject` 或 `expire`
 - 核心层不得写死 Windows 路径、PowerShell 或 Windows/macOS 专属 API
@@ -42,14 +42,16 @@
 
 当前项目状态：
 
-- 已完成：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P4.5-A`、`P4.5-B`、`P4.5-C`、`P4.5-D`
-- 当前阶段：`P5 Multi-Remote`
-- 当前节点：`P5 Multi-Remote`
-- 下一节点：`P6 跨平台清理`
+- 已完成：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P4.5-A`、`P4.5-B`、`P4.5-C`、`P4.5-D`、`P5`、`P5-1`、`P5-1.5`、`P5-2`、`P5-3`
+- 当前阶段：`P6 跨平台清理`
+- 当前节点：`P6-3 Boundary Cleanup`
+- 下一节点：`P6.5 Public Beta Release`
+- 下一阶段：`P6.5 Public Beta Release`
 - `V1` 暂不接入 `Claude Code`
 
-当前主线已完成 `P4` 与 `P4.5` 收口，下一步进入 `P5 Multi-Remote`。
+当前主线已完成 `P5 Multi-Remote` 收口，当前进入 `P6 跨平台清理`。
 当前阶段也不以实时聊天 UI 或推理链可视化作为主目标；后续实时会话控制属于平台增强能力，不改变控制平面的产品定位。
+`P6-1` 与 `P6-2` 已完成，当前节点切到 `P6-3 Boundary Cleanup`；阶段记录与剩余清理顺序见 `P6_worklog.md`。
 
 ## 当前融合原则
 
@@ -83,9 +85,9 @@
 - 允许将 `references/claude-code-haha-main/src/QueryEngine.ts`
   、`references/claude-code-haha-main/src/Tool.ts`
   、`references/claude-code-haha-main/src/bootstrap/state.ts`
-  与 `references/claude-code-haha-main/src/bridge/` 作为 `P5` 与 `P8` 的实现参考
+  与 `references/claude-code-haha-main/src/bridge/` 作为 `P6` 与 `P8` 的实现参考
 - 当前不因为本地已有 Claude Code 源码而提前进入 `Claude Code Support`
-- 当前不因为本地已有 Claude Code 源码而改变 `P5 -> P6 -> P7 -> P8` 的阶段顺序
+- 当前不因为本地已有 Claude Code 源码而改变 `P6 -> P6.5 -> P7 -> P8 -> V2 Claude` 的阶段顺序
 - 当前不将 Claude 的内部实现细节直接抽象成项目的顶层架构
 
 ## 当前稳定基线
@@ -164,8 +166,9 @@ provider 原生接入策略固定如下：
 - `已完成`：`P4.5-B` Session CLI
 - `已完成`：`P4.5-C` Hosted Session Contract
 - `已完成`：`P4.5-D` Recovery Contract
-- `当前`：`P5` Multi-Remote
-- `后续`：`P6` 跨平台清理
+- `已完成`：`P5` Multi-Remote
+- `当前`：`P6` 跨平台清理
+- `后续`：`P6.5` Public Beta Release
 - `后续`：`P7` Codex Support
 - `后续`：`P8` 可靠性增强
 - `V2`：`Claude Code Support`
@@ -252,7 +255,7 @@ remote-agent kimi start --task "重构 auth 模块"
 
 - 将单 remote、单 provider 的托管 session 补成“真实可操作”的日常使用闭环
 
-`P4.5` 已完成，当前进入 `P5 Multi-Remote`。
+`P4.5` 已完成；其后续 `P5 Multi-Remote` 也已完成，当前进入 `P6 跨平台清理`。
 
 ### 设立原因
 
@@ -363,7 +366,7 @@ remote-agent kimi start --task "重构 auth 模块"
 - Local Desktop 重新打开后的当前承诺，仅是重新连接 `relay` 并读取 `relay` 当下仍持有的 snapshot；Desktop 自身不持有 hosted session，也不负责 provider 执行现场恢复
 - `online / offline / awaiting_reconnect` 当前只作为目标 recovery 状态词汇存在，不是当前已经稳定暴露的 snapshot 字段；文档不能把它们写成既有 API
 - 最小 checkpoint 当前是目标契约，不是现有持久化实现；后续至少应包含：最近会话上下文、当前工作目录、待审批项、时间戳、客户端连接标识
-- pending approvals 当前继续使用 `request_id`；但 pending 状态目前只存在于 `relay` 内存态与 `remote-agent` 进程内存态，重启后没有自动恢复或 replay 承诺
+- pending approvals 当前对外继续使用 `request_id`；但在 multi-remote 下必须结合 `remote_id + request_id` 唯一定位；pending 状态目前只存在于 `relay` 内存态与 `remote-agent` 进程内存态，重启后没有自动恢复或 replay 承诺
 - 控制面事件当前只保证 live 上报与顺序信息；当前没有持久化 event buffer，也没有跨重启 replay 机制
 - `remote-agent` 服务复活后的当前承诺仅限于：服务可重新拉起并接受新请求；当前不承诺恢复此前 hosted session、`request_id -> session_id` 映射、pending approvals 或 provider 子进程现场
 - `relay` 重启后的当前承诺仅限于：重新开始接收新的 session / approval / event；当前不承诺恢复旧 snapshot，也不承诺自动向远端补拉历史状态
@@ -373,9 +376,10 @@ remote-agent kimi start --task "重构 auth 模块"
 当前阶段结论：
 
 - `P4.5` 已完成
-- 当前已实现的是：单 remote、单 provider 下的 hosted session 日常使用闭环
+- `P5` 也已在此基线上完成
+- 当前已实现的是：单 remote hosted-session 日常使用闭环，且已扩展到 multi-remote 聚合控制面
 - 当前仍未实现的是：checkpoint 持久化、pending approvals replay、控制面事件 replay、`remote-agent` 重启恢复、provider 执行现场恢复
-- 因此下一阶段可以进入 `P5`，但恢复实现仍继续保留在 `P8`
+- 因此当前阶段可以进入 `P6`，但恢复实现仍继续保留在 `P8`
 
 ### 范围
 
@@ -450,22 +454,70 @@ remote-agent kimi start --task "重构 auth 模块"
 
 ## P5 Multi-Remote
 
+### 状态
+
+- 已完成
+
 ### 目标
 
 将单 remote 控制台升级为多 remote 聚合。
 
-### 范围
+### 已完成子目标
 
-- server registry
-- 多个 `remote-agent` endpoint
-- 聚合多个 snapshot
-- 标记 disconnected 状态
+- `P5-1 Server Registry`
+  - `relay` 内建立最小 server registry
+  - snapshot 返回 `servers + sessions + approvals`
+  - 单 remote 旧路径继续可用
+- `P5-1.5 Approval Identity Hardening`
+  - approval 内部唯一定位改为 `remote_id + request_id`
+  - 仅传 `request_id` 时保留单 remote 兼容
+  - 多 remote 歧义时返回明确错误
+- `P5-2 Desktop Multi-Remote View`
+  - desktop 消费 `snapshot.servers`
+  - Remotes 面板可同时展示多个 remote
+  - session / approval 列表按 `remote_id` 区分来源
+  - approval 操作路径携带 `remote_id`
+- `P5-3 Remote Status Marking`
+  - 为 remote 增加 `connected / disconnected / unreachable` 最小状态标记
+  - Remotes 面板展示该状态
+  - 保持单 remote 兼容
+
+### 当前已实现能力
+
+- multi-remote server registry
+- `remote_id` 感知的 approval identity
+- desktop multi-remote 聚合视图
+- `connected / disconnected / unreachable` 最小状态标记
+- 单 remote 与现有 approval / session 主链路不回退
+
+### 当前边界
+
+- 还没有 reconnect 体系
+- 还没有持久化或跨重启 snapshot rehydrate
+- 还没有 pending approvals replay
+- 还没有控制面事件 replay
+- 还没有 provider 执行现场恢复
 
 ### 完成标准
 
 - 两台远端服务器可同时显示在一个本地控制端中
+- 同 `request_id` 在不同 remote 下不会错误命中
+- desktop 能明确区分多个 remote 的 session / approval 来源
+- remote 可显示最小连通状态而不引入完整 reconnect 体系
+
+### 完成结论
+
+`P5` 已完成，并为 `P6 跨平台清理` 提供了稳定的多 remote 基线。
+`P5` 没有把 reconnect、持久化或恢复系统实现提前写成已支持能力；这些工作仍保留在 `P8`。
 
 ## P6 跨平台清理
+
+### 状态
+
+- 当前阶段
+- 已完成：`P6-1 Platform Assumption Audit`
+- 已完成：`P6-2 Runbook And Text Policy Cleanup`
+- 当前节点：`P6-3 Boundary Cleanup`
 
 ### 目标
 
@@ -477,11 +529,59 @@ remote-agent kimi start --task "重构 auth 模块"
 - 清理 PowerShell 假设
 - 抽离平台通知、托盘、菜单栏逻辑
 - 明确编码、换行与路径策略
+- 在 `P6-1 / P6-2` 已完成基础上，继续 `P6-3 Boundary Cleanup`
 
 ### 完成标准
 
 - 核心层不依赖 Windows 专属能力
 - 本地控制端迁移到 macOS 不需要重写底座
+- `P6-3` 继续保证 Linux deploy 壳层与 desktop 平台壳层不回流到共享核心
+
+## P6.5 Public Beta Release
+
+### 目标
+
+在不等待 `Codex Support` 完成的前提下，发布首个公开可试用版本，用于尽早获取外部反馈。
+
+### 定位
+
+`P6.5` 是发布准备阶段，不是 provider 扩展阶段。
+
+其目标是将已经完成的：
+
+- `Kimi + remote-agent`
+- hosted session CLI
+- 本地审批与状态查看
+- Multi-Remote
+- 跨平台清理结果
+
+封装成可以公开试用的最小 Beta 版本。
+
+### 范围
+
+- Desktop 最小可运行交付形态
+- `remote-agent` 最小安装与启动封装
+- Quick Start
+- 平台支持矩阵
+- 已知限制说明
+- release notes
+- issue 模板
+- 截图或演示材料
+
+### 不包含
+
+- `Codex Support`
+- `Claude Code`
+- `P8` 级别的可靠性硬化
+- 商业级安装器
+- 多设备切换
+
+### 完成标准
+
+- 新用户可以按照文档完成一次本地控制端启动
+- 新用户可以完成一次远端 `remote-agent` 安装与启动
+- 新用户可以启动一个 `Kimi` hosted session 并完成一次本地审批
+- 仓库具备对外公开试用所需的最小说明、限制与反馈入口
 
 ## P7 Codex Support
 
@@ -542,10 +642,10 @@ remote-agent kimi start --task "重构 auth 模块"
 
 原因如下：
 
-- `V1` 更需要先收稳 `remote-agent` 与 `Multi-Remote`
+- `V1` 更需要先收稳 `remote-agent` 与 `Multi-Remote`，并完成 `P6` 的跨平台清理
 - `Kimi` 与 `Codex` 更适合当前控制平面主线
 - `Claude Code` 的最佳接入面更偏 `CLI / SDK + hooks`，适合作为第二阶段扩展
-- 即使本地已放入 Claude Code 源码，也只作为 `V2` 设计参考，不改变当前 `P5 -> P6 -> P7 -> P8` 的阶段顺序
+- 即使本地已放入 Claude Code 源码，也只作为 `V2` 设计参考，不改变当前 `P6 -> P6.5 -> P7 -> P8 -> V2 Claude` 的阶段顺序
 
 ## Agent 分配建议
 
@@ -575,37 +675,37 @@ remote-agent kimi start --task "重构 auth 模块"
 
 当前进度口径：
 
-- `P4.5-A` 已完成
-- `P4.5-B` 已完成
-- `P4.5-C` 已完成
-- `P4.5-D` 已完成
-- `P4.5` 已完成
-- 当前进入 `P5`
+- `P5-1` 已完成
+- `P5-1.5` 已完成
+- `P5-2` 已完成
+- `P5-3` 已完成
+- `P5` 已完成
+- 当前进入 `P6`
 
 ## Agent 任务模板
 
 推荐模板：
 
 ```text
-当前阶段：P5 Multi-Remote
+当前阶段：P6 Cross-Platform Cleanup
 
 当前目标：
-将单 remote 控制台升级为多 remote 聚合，同时保持现有单 remote hosted-session、approval 一致性与 relay 语义不回退。
+在不破坏 `P5` 多 remote 基线的前提下，清理 Windows / PowerShell 假设与平台耦合，为后续 `P7` 与 `P8` 提供更稳定的跨平台底座。
 
 当前前提：
-- P4 已完成
-- P4.5 已完成
-- 单 remote 下的 remote-agent、relay、approval writeback 与 session CLI 已收口
+- P5 已完成
+- multi-remote server registry 已建立
+- approval 已具备 `remote_id + request_id` 唯一定位规则
+- desktop 已具备 multi-remote view 与最小 remote 状态标记
 - recovery 当前仍以 contract 为准，不把未实现恢复系统写成既有能力
 
 这次只做：
-- 建立最小 server registry 或等价 remote 列表
-- 让 `relay` 能同时读取多个 `remote-agent` endpoint 的最小状态
-- 聚合多个 remote 的 snapshot，并在本地控制端中展示
-- 为不可达 remote 标记 `disconnected` 或等价断连状态
-- 保持 approval 使用 `request_id`
-- 保持 session 事件顺序语义与现有 snapshot 一致性不回退
-- 保持 provider-specific 细节继续留在 `remote-agent`，不回退到旧 bridge 主链路
+- 清理 Windows 路径硬编码
+- 清理 PowerShell-only 假设
+- 收敛路径、编码与换行策略
+- 抽离平台相关入口或壳层逻辑，避免核心层依赖 Windows/macOS 专属 API
+- 保持 `relay -> remote-agent -> provider` 主链路不回退
+- 保持现有 multi-remote snapshot / approval / session 语义不回退
 
 这次不要做：
 - Codex
@@ -614,40 +714,61 @@ remote-agent kimi start --task "重构 auth 模块"
 - 持久化实现
 - recovery 系统实现扩张
 - 回退去扩展旧 bridge
-- 提前进入 `P6`、`P7` 或 `P8`
+- 提前进入 `P7` 或 `P8`
 
 允许修改：
 - relay/
 - desktop/
-- 如确有必要，可最小修改 remote-agent/ 配置接入点
+- remote-agent/
 - README.md
 - DEV.md
 - 对应阶段 worklog
 
 完成标准：
-- 本地控制端能同时看到多个 remote 的最小聚合视图
-- 不可达 remote 有明确断连状态
-- 现有单 remote approval / session 语义不回退
-- README、DEV 与阶段 worklog 对当前 P5 目标表述一致
+- 核心层不再依赖 Windows 专属能力
+- 现有 multi-remote approval / session / snapshot 语义不回退
+- README、DEV 与阶段 worklog 对当前 P6 目标表述一致
 - 告诉我你修改了哪些文件
-- 告诉我新增/修改了哪些接口或聚合路径
+- 告诉我哪些平台耦合已被清理
 ```
 
 ## 当前常用命令
 
+默认先切到仓库根目录。
+如果使用虚拟环境，请先按当前 shell 的方式激活；这里不再写死 PowerShell 或 Windows 专用激活命令。
+
 ### 运行 relay
 
-```powershell
-cd C:\Users\dqhua\Desktop\agent-control-plane
-.venv\Scripts\Activate.ps1
+```text
 python -m uvicorn relay.main:app --reload
 ```
 
 ### 运行 desktop
 
-```powershell
-cd C:\Users\dqhua\Desktop\agent-control-plane\desktop
+```text
+cd desktop
 npm start
+```
+
+### 运行 remote-agent
+
+本地开发或调试 CLI：
+
+```text
+python -m pip install -e ./remote-agent
+remote-agent serve
+remote-agent kimi start --task "重构 auth 模块"
+remote-agent sessions
+```
+
+### 远端 Linux 部署 remote-agent
+
+以下 deploy 命令只适用于远端 Linux host。
+deploy 壳层继续留在 `remote-agent/deploy/` 与 `remote-agent/scripts/`，不进入共享 runtime 核心：
+
+```text
+cd remote-agent
+bash scripts/install-systemd-user.sh --start
 ```
 
 ### 当前远端部署策略
@@ -655,9 +776,10 @@ npm start
 `P4` 默认采用：
 
 - `systemctl --user`
+- Linux deploy 壳层保留在 `remote-agent/deploy/` 与 `remote-agent/scripts/`
 
 后续如需兼容更多环境，再补 fallback。
 
 ## 总结
 
-`P0-P4` 与 `P4.5` 已完成。当前阶段已切换到 `P5 Multi-Remote`。后续顺序保持为 `P5 -> P6 -> P7 -> P8 -> V2 Claude`，不回退既有 `relay`、desktop MVP、hosted session CLI 与 approval 一致性规则，也不把当前 recovery contract 误写成已实现恢复系统。
+`P0-P5` 已完成。当前阶段已切换到 `P6 跨平台清理`。当前节点为 `P6-3 Boundary Cleanup`，后续顺序保持为 `P6 -> P6.5 -> P7 -> P8 -> V2 Claude`，不回退既有 `relay`、desktop MVP、hosted session CLI 与 multi-remote approval / session 一致性规则，也不把当前 recovery contract 误写成已实现恢复系统。

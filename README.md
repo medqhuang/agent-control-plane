@@ -6,12 +6,12 @@
 
 ## 项目状态
 
-- 已完成阶段：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`
-- 已完成子阶段：`P4.5-A Relay Integration`、`P4.5-B Session CLI`、`P4.5-C Hosted Session Contract`、`P4.5-D Recovery Contract`
-- 当前阶段：`P5 Multi-Remote`
-- 当前节点：`P5 Multi-Remote`
-- 下一节点：`P6 跨平台清理`
-- 下一阶段：`P6 跨平台清理`
+- 已完成阶段：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P5`
+- 已完成子阶段：`P4.5-A Relay Integration`、`P4.5-B Session CLI`、`P4.5-C Hosted Session Contract`、`P4.5-D Recovery Contract`、`P5-1 Server Registry`、`P5-1.5 Approval Identity Hardening`、`P5-2 Desktop Multi-Remote View`、`P5-3 Remote Status Marking`
+- 当前阶段：`P6 跨平台清理`
+- 当前节点：`P6-3 Boundary Cleanup`
+- 下一节点：`P6.5 Public Beta Release`
+- 下一阶段：`P6.5 Public Beta Release`
 - `V1` 主线：`Kimi` + `remote-agent` + `Multi-Remote` + `Codex`
 - `V2` 计划：`Claude Code`
 
@@ -23,12 +23,33 @@
 - `P2` Kimi 闭环
 - `P2.5` Kimi bridge 收口与远端复核
 - `P3` 本地控制端 MVP
+- `P4` Remote-Agent Foundation
+- `P4.5` Hosted Session Usability
+- `P5` Multi-Remote
 
 当前优先事项：
 
-- 推进 `P5 Multi-Remote`
+- 推进 `P6 跨平台清理`
+- 保持 `P5` 已完成的多 remote 基线稳定，不回退为单 remote 视角
 - 保持 `P4` 与 `P4.5` 已完成链路稳定，不回退到旧 bridge 主路径
 - 保持 recovery 相关表述继续遵循当前 contract-only 边界，不把未实现恢复系统写成已支持
+
+`P5` 当前已具备：
+
+- `relay` 内的 multi-remote server registry
+- 以 `remote_id + request_id` 唯一定位的 approval identity；单 remote 下保留 `request_id` 兼容用法
+- desktop 对 `snapshot.servers` 的 multi-remote 展示与按 `remote_id` 分组的 session / approval 视图
+- `connected / disconnected / unreachable` 最小 remote 状态标记
+
+`P5` 当前未做：
+
+- reconnect 体系
+- 持久化与跨重启 rehydrate
+- pending approvals replay
+- 控制面事件 replay
+- provider 执行现场恢复
+
+这些能力仍保留在后续可靠性阶段，尤其是 `P8`，不应被误写为 `P5` 已落地。
 
 ## 项目目标
 
@@ -233,11 +254,15 @@ flowchart LR
 
 `当前推荐节点`
 
-- `P5` Multi-Remote
+- `P6-3` Boundary Cleanup
 
 `下一节点`
 
-- `P6` 跨平台清理
+- `P6.5` Public Beta Release
+
+`后续节点`
+
+- `P7` Codex Support
 
 `P4.5` 用于将托管 session 从“已经具备 foundation”补到“可以日常使用”的最小闭环，重点包括：
 
@@ -263,6 +288,17 @@ flowchart LR
 - 还没有实现 checkpoint 持久化、pending approvals replay、控制面事件 replay 或 provider 执行现场恢复
 - 这些恢复实现工作继续留在后续可靠性阶段，而不是被误写成 `P4.5` 已落地能力
 
+在此基础上，`P5 Multi-Remote` 也已完成，当前阶段切换为 `P6 跨平台清理`。
+
+`P6.5 Public Beta Release` 插在 `P6` 与 `P7` 之间，用于完成首次公开可试用版本所需的最小封装与发布准备，重点包括：
+
+- Desktop 的最小可运行交付形态
+- `remote-agent` 的最小安装与启动封装
+- Quick Start、平台支持矩阵与已知限制
+- 面向外部试用者的 release notes、issue 模板与演示材料
+
+`P6.5` 的定位是公开 Beta 发布，而不是 `Codex` 接入后的完整正式版本。
+
 当前 hosted session contract 约定如下：
 
 - `remote-agent kimi start --task "..."` 的语义是创建后台托管 session；命令本身只等待首个 checkpoint，达到“本轮完成”或“出现 approval”后返回，不把后续 session 绑定在当前 shell
@@ -283,7 +319,7 @@ flowchart LR
 - Local Desktop 重新打开后的当前承诺是：它只能重新连接 `relay` 并读取 `relay` 当下仍持有的 snapshot；Desktop 自身不持有 hosted session，也不负责 provider 现场恢复
 - `online / offline / awaiting_reconnect` 是 recovery 目标契约里的状态词汇，不是当前已经稳定暴露的 snapshot 字段；当前文档不能把它们写成既有 API
 - 最小 checkpoint 结构当前是目标契约，不是现有持久化实现；后续至少应包含：最近会话上下文、当前工作目录、待审批项、时间戳、客户端连接标识
-- pending approvals 的当前语义是：`request_id` 继续作为唯一标识，但 pending 状态只存在于当前 `relay` 内存态与 `remote-agent` 进程内存态；任一侧重启后都没有自动恢复或 replay 承诺
+- pending approvals 的当前语义是：approval 对外仍使用 `request_id`，但在 multi-remote 下必须结合 `remote_id + request_id` 才能唯一定位；pending 状态只存在于当前 `relay` 内存态与 `remote-agent` 进程内存态；任一侧重启后都没有自动恢复或 replay 承诺
 - 控制面事件的当前语义是：`remote-agent` 只向 `relay` 发送实时标准事件，事件带顺序信息，但当前没有持久化 event buffer，也没有跨重启 replay 机制
 - `remote-agent` 服务复活后的当前承诺仅限于：服务可被重新拉起并重新接受新请求；当前不承诺恢复此前 hosted session、`request_id -> session_id` 映射、pending approvals 或 provider 子进程现场
 - `relay` 重启后的当前承诺仅限于：重新开始接收新的 session / approval / event；当前不承诺从自身恢复旧 snapshot，也不承诺自动向远端拉取历史状态
@@ -292,8 +328,8 @@ flowchart LR
 
 `V1 后续`
 
-- `P5` Multi-Remote
 - `P6` 跨平台清理
+- `P6.5` Public Beta Release
 - `P7` Codex Support
 - `P8` 可靠性增强
 
@@ -306,6 +342,11 @@ flowchart LR
 - `P4`：完成远端执行边界迁移到 `remote-agent`
 - `P4.5`：补齐托管 session 的日常可用性
 - `P5`：把单 remote 控制面扩展成多 remote 聚合控制面
+- `P6`：清理跨平台硬编码与平台耦合，收稳 `P5` 的聚合底座
+- `P6-1`：先盘清仓库内仍然存在的 Windows / PowerShell / 路径 / 编码 / 平台 API 假设，明确阻塞项与最小清理落点
+- `P6-2`：先收口运行入口、文档命令面与仓库文本策略，再进入后续模块边界清理
+- `P6-3`：继续收口模块边界，保持 Linux deploy 壳层与 desktop 平台壳层不回流到共享核心
+- `P6.5`：完成首次公开 Beta 发布准备，封装当前 `Kimi + remote-agent + desktop + Multi-Remote` 最小可试用交付，不等同于 `Codex` 阶段
 - `P8`：落实“本地可关闭、远端持续运行、后续可重连恢复”的稳定能力
 - `P8`：同时完成“服务复活、状态重建、恢复边界说明”的正式实现与正式文档化
 
@@ -323,6 +364,7 @@ agent-control-plane/
 ├── P3_worklog.md
 ├── P4_worklog.md
 ├── P4.5_worklog.md
+├── P5_worklog.md
 ├── logs/
 ├── relay/
 ├── adapters/
@@ -331,6 +373,43 @@ agent-control-plane/
 │   └── codex/
 ├── desktop/
 └── remote-agent/
+```
+
+## 当前 Runbook 口径
+
+以下命令使用 repo-relative 路径，不绑定固定本机目录。
+除非另有说明，默认先在仓库根目录执行。
+如果使用虚拟环境，请先按当前 shell 的方式激活；文档不再写死某一个 shell 的激活命令。
+
+### relay
+
+```text
+python -m uvicorn relay.main:app --reload
+```
+
+### desktop
+
+```text
+cd desktop
+npm start
+```
+
+### remote-agent
+
+本地开发或调试 CLI：
+
+```text
+python -m pip install -e ./remote-agent
+remote-agent serve
+remote-agent kimi start --task "..."
+remote-agent sessions
+```
+
+远端 Linux deploy 壳层继续留在 `remote-agent/deploy/` 与 `remote-agent/scripts/`，当前部署口径仍是从已部署的 repo 副本进入 `remote-agent/` 目录后执行：
+
+```text
+cd remote-agent
+bash scripts/install-systemd-user.sh --start
 ```
 
 ## 维护者说明
