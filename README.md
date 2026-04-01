@@ -206,8 +206,10 @@ reply 主链路。
 
 ## 文档关系
 
+- [logs/P9_worklog.md](logs/P9_worklog.md)
+  - 当前 `P9 Codex Support` 拆分、验收与状态前推记录
 - [logs/P8_worklog.md](logs/P8_worklog.md)
-  - 当前 `P8` 收口记录与 blocker 审计结果
+  - 已完成 `P8 V1.0 Release` 的 live gate、blocker 审计与收口记录
 - [logs/P6.5_trial_guide.md](logs/P6.5_trial_guide.md)
   - 历史文件名保留；当前作为 `v1.0` operator-led 最小试用讲解文档继续使用
 - [logs/P6.5_release_notes.md](logs/P6.5_release_notes.md)
