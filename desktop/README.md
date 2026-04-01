@@ -78,7 +78,7 @@ npm start
 的文案，例如：
 
 ```text
-Create a file named acp-v1-proof.txt in the current directory, but ask for approval before writing anything.
+Use the shell tool to run pwd and return only the absolute path. Do not answer from memory.
 ```
 
 ### 5. 在本地 UI 中处理一轮 approval
@@ -103,6 +103,7 @@ Create a file named acp-v1-proof.txt in the current directory, but ask for appro
 - `desktop` 不会自动发现或安装远端 `remote-agent`
 - `desktop` 不会替试用者补写远端 env
 - 当前本地正式承诺平台仍是 Windows
+- 当前状态观察以手工 refresh 为主
 - 当前列表与 detail 只反映 `relay` 仍保留在内存中的状态；`relay` 重启后不会自动恢复旧状态
 
 ## 当前不承诺

@@ -4,14 +4,16 @@
 
 ## 当前阶段
 
-- 当前阶段：`P8 V1.0 Release`
-- 当前子目标：`P8 Live End-to-End Trial Verification And Blocker Triage`
+- 当前阶段：`P9 Codex Support`
+- 当前子目标：`P9 Codex Support`
 - 已完成：`P0-P7`、`P7-A`、`P7-B`、`P7-C`、`P7-D`
-- 下一阶段：`P9 Codex Support`
+- 已完成发布闸门：`P8 V1.0 Release`
+- 下一阶段：`P10 Reliability Reinforcement`
 - 当前唯一正式 provider：`Kimi`
 
-当前阶段只做 `v1.0` 口径冻结、release surface 审计、最小试用路径统一与
-已知限制收口，不前推到 `P9`、`P10` 或 `V2 Claude`。
+`P8 v1.0` 的 live release gate 已通过，当前维护焦点已前推到 `P9 Codex Support`。
+`v1.0` 文档继续只覆盖已经真实验证通过的 `Kimi` 主链路，不前写 `P10` 或
+`V2 Claude` 能力。
 
 ## 固定架构与全局约束
 
@@ -68,7 +70,7 @@
 推荐用来验证 `reply -> approval` 闭环的 UI reply 文案：
 
 ```text
-Create a file named acp-v1-proof.txt in the current directory, but ask for approval before writing anything.
+Use the shell tool to run pwd and return only the absolute path. Do not answer from memory.
 ```
 
 ## 当前实现基线
@@ -129,35 +131,37 @@ Create a file named acp-v1-proof.txt in the current directory, but ask for appro
 - `relay` 与 `remote-agent` 都仍是内存态
 - 当前不承诺 checkpoint、replay、pending approvals replay 或 provider `resume / reattach`
 
-## P8 本轮 blocker 审计结论
+## P8 收口结论
 
-### Release-blocking
+### Live Verification Passed
 
-- 本轮基于仓库静态审计，没有识别出一个已经被当前代码明确暴露、且必须立刻修实现才能让 `v1.0` 文档成立的 confirmed code blocker
-- 本轮没有做真实远端完整链路复跑，因此也没有把“未复跑 live E2E”误写成“已确认无实现风险”
+- 已真实验证：本地 relay、desktop、远端 Linux `remote-agent`、真实 `Kimi` hosted session
+- 已真实验证：本地 UI 可见 session、可打开 detail、可提交一轮 `reply`
+- 已真实验证：本地 UI 可见 approval、可提交 `Approve`、决策后 session 继续执行并回流到 detail
 
-### Non-blocking but must be documented
+### Confirmed Blocker Fixed
+
+- `remote-agent kimi start` 在 service mode 下默认忽略 CLI 调用目录，已在
+  `remote-agent/src/remote_agent/cli.py` 修复为默认继承 `os.getcwd()`
+- 修复后已复跑验证：`cd <trial-dir> && remote-agent kimi start --task "..."` 会把
+  hosted session workdir 落到调用目录
+
+### Remaining Known Limitations
 
 - source-run / source-install 仍是当前正式交付面
 - `relay` / `remote-agent` 内存态与重启不恢复
 - 仅 `Kimi`
 - 仅本地 Windows + 远端 Linux
 - 手工 env / 网络检查
+- `desktop` 当前以手工 refresh 为主
 - `watch` 单次读取
 - `attach` 缺失
 
-### Doc-only issues fixed in this round
-
-- README 仍保留 `P7` 之前的旧限制描述
-- P6.5 文档的阶段推进写错到 `P7 Codex Support` / `P8 Reliability`
-- 根文档对 `logs/` 下文件的引用路径不统一
-- `desktop/README.md` 与 `remote-agent/README.md` 未对齐当前 `session detail + reply + approval` 闭环
-
 ## 后续顺序
 
-- 当前仍停留在 `P8`
-- 当前子目标完成后，下一步仍是 `P9 Codex Support`
-- 不因为文档收口提前进入 `P10`
+- `P8` 已通过 live release gate
+- 当前阶段已前推到 `P9 Codex Support`
+- 后续阶段仍按 `P10 Reliability Reinforcement -> V2 Claude` 推进
 
 ## 常用命令
 

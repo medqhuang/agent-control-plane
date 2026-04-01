@@ -69,6 +69,9 @@ remote-agent stop <session_id>
 
 `remote-agent attach <session_id>` 当前未实现。
 
+当 `--workdir` 省略时，`remote-agent kimi start` 会默认继承 CLI 调用目录；
+只有在需要覆盖时才显式传 `--workdir`。
+
 ## install script 已自动完成的内容
 
 - 创建 venv：`~/.venvs/agent-control-plane`
@@ -160,6 +163,9 @@ cd ~/acp-v1-trial
 remote-agent kimi start --task "Inspect the current directory and wait for my next instruction."
 ```
 
+当前 live 验证已确认：这条 `cd ... && remote-agent kimi start ...` 路径会把 hosted
+session workdir 落到调用目录本身。
+
 ### 4. 在本地 UI 中查看 session
 
 当前应在本地 `desktop` 中看到该 session，并能打开 session detail。
@@ -169,7 +175,7 @@ remote-agent kimi start --task "Inspect the current directory and wait for my ne
 推荐用本地 UI 发送：
 
 ```text
-Create a file named acp-v1-proof.txt in the current directory, but ask for approval before writing anything.
+Use the shell tool to run pwd and return only the absolute path. Do not answer from memory.
 ```
 
 ### 6. 在本地 UI 中处理一轮 approval
@@ -211,6 +217,7 @@ Create a file named acp-v1-proof.txt in the current directory, but ask for appro
 - source-install 仍是当前正式交付形态
 - 手工 env 仍是当前正式路径的一部分
 - 网络检查仍需手工完成
+- approval 触发依赖 provider 的实际 tool selection；如需稳定验证 approval，推荐使用显式 shell-tool 文案
 - `watch` 不是持续 follow
 - `attach` 未实现
 - `relay` 与 `remote-agent` 都仍是内存态

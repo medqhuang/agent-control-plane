@@ -8,14 +8,16 @@
 
 ## 当前阶段
 
-- 当前阶段：`P8 V1.0 Release`
-- 当前子目标：`P8 Live End-to-End Trial Verification And Blocker Triage`
+- 当前阶段：`P9 Codex Support`
+- 当前子目标：`P9 Codex Support`
 - 已完成：`P0-P7`、`P7-A`、`P7-B`、`P7-C`、`P7-D`
-- 下一阶段：`P9 Codex Support`
+- 已完成发布闸门：`P8 V1.0 Release`
+- 下一阶段：`P10 Reliability Reinforcement`
 - 当前唯一正式 provider：`Kimi`
 
-当前阶段只收口 `v1.0` 已实现能力、未实现能力、最小试用路径与已知限制，
-不把 `P9`、`P10` 或 `V2 Claude` 的内容提前写成当前已支持。
+`P8 v1.0` 的 live end-to-end trial verification 已完成，当前仓库已前推到
+`P9 Codex Support`。`v1.0` 的对外口径继续只覆盖已经真实验证通过的 `Kimi`
+主链路，不把 `P10` 或 `V2 Claude` 的内容提前写成当前已支持。
 
 ## v1.0 已承诺能力
 
@@ -143,6 +145,9 @@ cd ~/acp-v1-trial
 remote-agent kimi start --task "Inspect the current directory and wait for my next instruction."
 ```
 
+当前 live 验证已确认：在 service mode 下，当不显式传 `--workdir` 时，
+`remote-agent kimi start` 会默认继承 CLI 调用目录。
+
 如果 `kimi` 不在 PATH：
 
 ```bash
@@ -165,8 +170,11 @@ remote-agent kimi start --kimi-bin /path/to/kimi --task "Inspect the current dir
 在 session detail 的 reply 输入框中提交一条更可能触发 approval 的指令：
 
 ```text
-Create a file named acp-v1-proof.txt in the current directory, but ask for approval before writing anything.
+Use the shell tool to run pwd and return only the absolute path. Do not answer from memory.
 ```
+
+当前 live 验证中，这条显式 shell-tool 文案已真实触发一轮 approval，并在本地 UI
+中完成 `Approve -> session continue -> detail 回流`。
 
 这一步验证的是当前 `v1.0` 已实现的“本地 UI -> relay -> remote-agent -> hosted session”
 reply 主链路。
@@ -189,6 +197,7 @@ reply 主链路。
 - `relay` 仍需手工启动
 - `remote-agent` 仍需手工补充 relay / control / remote-name env
 - 本地到远端、远端到本地的网络连通性仍需手工确认
+- `desktop` 当前以手工 refresh 为主，不承诺自动持续刷新
 - `watch` 当前是单次读取，不是持续 follow
 - `attach` 当前未实现
 - `stop` 当前不能在 `approval_pending` 或 turn 运行中执行
@@ -216,9 +225,9 @@ reply 主链路。
 ## 路线图
 
 - 已完成：`P0 -> P7`
-- 当前：`P8 V1.0 Release`
-- 下一阶段：`P9 Codex Support`
+- 已完成：`P8 V1.0 Release`
+- 当前：`P9 Codex Support`
 - 后续：`P10 Reliability Reinforcement`
 - 更后续：`V2 Claude`
 
-当前阶段仍停留在 `P8`，不会因为文档收口而前推到 `P9`。
+`P8` 已经通过 live release gate，当前文档状态已同步前推到 `P9 Codex Support`。
