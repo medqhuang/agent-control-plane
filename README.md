@@ -7,7 +7,7 @@
 ## 项目状态
 
 - 已完成阶段：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P5`、`P6`
-- 已完成子阶段：`P4.5-A Relay Integration`、`P4.5-B Session CLI`、`P4.5-C Hosted Session Contract`、`P4.5-D Recovery Contract`、`P5-1 Server Registry`、`P5-1.5 Approval Identity Hardening`、`P5-2 Desktop Multi-Remote View`、`P5-3 Remote Status Marking`
+- 已完成子阶段：`P4.5-A Relay Integration`、`P4.5-B Session CLI`、`P4.5-C Hosted Session Contract`、`P4.5-D Recovery Contract`、`P5-1 Server Registry`、`P5-1.5 Approval Identity Hardening`、`P5-2 Desktop Multi-Remote View`、`P5-3 Remote Status Marking`、`P6-1 Platform Assumption Audit`、`P6-2 Runbook And Text Policy Cleanup`、`P6-3 Boundary Cleanup`
 - 当前阶段：`P6.5 Public Beta Release`
 - 当前节点：`P6.5 Public Beta Release`
 - 下一节点：`P7 Codex Support`
@@ -298,6 +298,7 @@ flowchart LR
 - 面向外部试用者的 release notes、issue 模板与演示材料
 
 `P6.5` 的定位是公开 Beta 发布，而不是 `Codex` 接入后的完整正式版本。
+`P6-1`、`P6-2` 与 `P6-3` 已全部完成，因此当前主线已从 `P6` 前推到 `P6.5`。
 
 当前 hosted session contract 约定如下：
 

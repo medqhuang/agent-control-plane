@@ -42,7 +42,7 @@
 
 当前项目状态：
 
-- 已完成：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P4.5-A`、`P4.5-B`、`P4.5-C`、`P4.5-D`、`P5`、`P5-1`、`P5-1.5`、`P5-2`、`P5-3`
+- 已完成：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P4.5-A`、`P4.5-B`、`P4.5-C`、`P4.5-D`、`P5`、`P5-1`、`P5-1.5`、`P5-2`、`P5-3`、`P6-1`、`P6-2`、`P6-3`、`P6`
 - 当前阶段：`P6.5 Public Beta Release`
 - 当前节点：`P6.5 Public Beta Release`
 - 下一节点：`P7 Codex Support`
@@ -87,7 +87,7 @@
   、`references/claude-code-haha-main/src/bootstrap/state.ts`
   与 `references/claude-code-haha-main/src/bridge/` 作为 `P6` 与 `P8` 的实现参考
 - 当前不因为本地已有 Claude Code 源码而提前进入 `Claude Code Support`
-- 当前不因为本地已有 Claude Code 源码而改变 `P6 -> P6.5 -> P7 -> P8 -> V2 Claude` 的阶段顺序
+- 当前不因为本地已有 Claude Code 源码而改变后续 `P6.5 -> P7 -> P8 -> V2 Claude` 的阶段顺序
 - 当前不将 Claude 的内部实现细节直接抽象成项目的顶层架构
 
 ## 当前稳定基线
@@ -650,7 +650,7 @@ remote-agent kimi start --task "重构 auth 模块"
 - `V1` 更需要先收稳 `remote-agent` 与 `Multi-Remote`，并完成 `P6` 的跨平台清理
 - `Kimi` 与 `Codex` 更适合当前控制平面主线
 - `Claude Code` 的最佳接入面更偏 `CLI / SDK + hooks`，适合作为第二阶段扩展
-- 即使本地已放入 Claude Code 源码，也只作为 `V2` 设计参考，不改变当前 `P6 -> P6.5 -> P7 -> P8 -> V2 Claude` 的阶段顺序
+- 即使本地已放入 Claude Code 源码，也只作为 `V2` 设计参考，不改变当前后续 `P6.5 -> P7 -> P8 -> V2 Claude` 的阶段顺序
 
 ## Agent 分配建议
 
@@ -689,9 +689,11 @@ remote-agent kimi start --task "重构 auth 模块"
 - `P6-2` 已完成
 - `P6-3` 已完成
 - `P6` 已完成
-- 当前进入 `P6.5`
+- 当前进入 `P6.5 Public Beta Release`
 
 ## Agent 任务模板
+
+以下模板保留为 `P6` 收口阶段归档模板，用于后续回看拆分方式；不代表当前阶段回退，项目当前已进入 `P6.5 Public Beta Release`。
 
 推荐模板：
 
@@ -796,7 +798,7 @@ bash scripts/install-systemd-user.sh --start
 - `systemctl --user`
 - Linux deploy 壳层保留在 `remote-agent/deploy/` 与 `remote-agent/scripts/`
 
-后续如需兼容更多环境，再补 fallback。
+后续如需兼容更多环境，再补显式 deploy 或 provider 配置入口，但不恢复共享 runtime 内的 Linux-home fallback。
 
 ## 总结
 

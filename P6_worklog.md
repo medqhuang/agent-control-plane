@@ -45,8 +45,7 @@ This document records completed `P6-1 Platform Assumption Audit`, completed
   branch was added to `desktop/preload.js`, renderer, state, or `relay/`.
 - Removed the shared-runtime Linux home fallback for provider binary discovery
   from `remote-agent/src/remote_agent/providers/kimi/worker.py`; shared runtime
-  now relies on PATH plus explicit `KIMI_BIN` / `--kimi-bin` override instead of
-  `~/.local/bin/kimi`.
+  now relies on PATH plus explicit `KIMI_BIN` / `--kimi-bin` override.
 - Confirmed that `relay/` and `remote-agent/src/remote_agent/` do not absorb
   `systemctl`, `/bin/bash`, `loginctl`, or Linux deploy-path assumptions.
 
@@ -161,9 +160,9 @@ Status: done.
 
 ### 3. P6-3 Optional Provider Surface Tightening
 
-- If needed, move provider binary discovery defaults out of
-  `remote-agent/src/remote_agent/providers/kimi/worker.py` into a clearly named
-  Linux provider config helper or env-only fallback layer.
+- Shared runtime no longer keeps a Linux-home provider fallback. If provider
+  discovery needs to expand later, add an explicit provider config surface
+  outside the shared core instead of restoring an implicit fallback layer.
 
 Status: done with the minimal boundary-safe path: PATH plus explicit
 `KIMI_BIN` / `--kimi-bin` override.
