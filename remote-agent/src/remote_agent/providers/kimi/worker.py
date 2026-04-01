@@ -451,6 +451,7 @@ async def _append_lifecycle_event(
             remote=reporter.remote_name,
             title=task,
             event=event,
+            control=reporter.build_control_metadata(),
         ),
     )
     relay_deliveries.append(delivery)
@@ -466,6 +467,7 @@ def _build_relay_event(
     remote: str,
     title: str,
     event: dict[str, object],
+    control: dict[str, object],
 ) -> dict[str, object]:
     return {
         "type": str(event["type"]),
@@ -476,6 +478,7 @@ def _build_relay_event(
         "remote": remote,
         "title": title,
         "payload": _relay_payload_for_event(event),
+        "control": dict(control),
     }
 
 

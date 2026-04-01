@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import socket
+import sys
 from dataclasses import dataclass
 from dataclasses import field
 from typing import Mapping
@@ -32,11 +33,21 @@ def _default_timeout_seconds() -> float:
         return 5.0
 
 
+def _default_control_base_url() -> str:
+    configured = os.environ.get("REMOTE_AGENT_CONTROL_BASE_URL")
+    if configured:
+        return configured.rstrip("/")
+    host = os.environ.get("REMOTE_AGENT_CONTROL_HOST", "127.0.0.1")
+    port = os.environ.get("REMOTE_AGENT_PORT", "8711")
+    return f"http://{host}:{port}"
+
+
 @dataclass(slots=True)
 class RelayReporter:
     endpoint: str | None = field(default_factory=_default_endpoint)
     remote_name: str = field(default_factory=_default_remote_name)
     timeout_seconds: float = field(default_factory=_default_timeout_seconds)
+    control_base_url: str = field(default_factory=_default_control_base_url)
 
     def describe(self) -> dict[str, object]:
         event_endpoint = self._event_endpoint()
@@ -46,8 +57,9 @@ class RelayReporter:
             "event_endpoint": event_endpoint,
             "remote_name": self.remote_name,
             "timeout_seconds": self.timeout_seconds,
+            "control_base_url": self.control_base_url,
             "entrypoint": "remote_agent.relay.client:RelayReporter",
-            "next_step": "relay decision writeback is still pending",
+            "next_step": "relay decision writeback goes through remote-agent service",
         }
 
     def post_event(self, event: Mapping[str, object]) -> dict[str, object]:
@@ -117,3 +129,10 @@ class RelayReporter:
         if normalized.endswith(_REMOTE_AGENT_EVENTS_PATH):
             return normalized
         return normalized + _REMOTE_AGENT_EVENTS_PATH
+
+    def build_control_metadata(self) -> dict[str, object]:
+        return {
+            "base_url": self.control_base_url,
+            "python_executable": sys.executable,
+            "module": "remote_agent",
+        }

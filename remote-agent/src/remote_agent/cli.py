@@ -10,6 +10,9 @@ import uvicorn
 
 from remote_agent.app import create_app
 from remote_agent.output import print_json
+from remote_agent.service_client import RemoteAgentServiceError
+from remote_agent.service_client import default_service_base_url
+from remote_agent.service_client import post_json
 from remote_agent.supervisor import SupervisorRuntime
 
 
@@ -51,12 +54,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     kimi_start_parser = kimi_subparsers.add_parser(
         "start",
-        help="start a Kimi task via kimi --wire",
+        help="start a hosted Kimi task via the local remote-agent service",
     )
     kimi_start_parser.add_argument(
         "--task",
         required=True,
-        help="task text for the future Kimi worker",
+        help="task text for the hosted Kimi worker",
     )
     kimi_start_parser.add_argument(
         "--workdir",
@@ -67,12 +70,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--timeout-seconds",
         default=_get_env_int("REMOTE_AGENT_KIMI_TIMEOUT_SECONDS", 90),
         type=int,
-        help="maximum time to wait for a finish or approval event",
+        help="maximum time to wait for a finish or approval checkpoint",
     )
     kimi_start_parser.add_argument(
         "--kimi-bin",
         default=os.environ.get("KIMI_BIN"),
         help="override the kimi executable path",
+    )
+    kimi_start_parser.add_argument(
+        "--service-base-url",
+        default=default_service_base_url(),
+        help="base URL for the local remote-agent service",
     )
     kimi_start_parser.set_defaults(handler=_handle_kimi_start)
     return parser
@@ -106,7 +114,7 @@ def _handle_serve(args: argparse.Namespace) -> int:
         }
     )
     uvicorn.run(
-        create_app(),
+        create_app(runtime),
         host=args.host,
         port=args.port,
         log_level=args.log_level,
@@ -115,15 +123,47 @@ def _handle_serve(args: argparse.Namespace) -> int:
 
 
 def _handle_kimi_start(args: argparse.Namespace) -> int:
-    runtime = SupervisorRuntime()
-    print_json(
-        runtime.start_kimi_task(
-            task=args.task,
-            workdir=args.workdir,
-            timeout_seconds=args.timeout_seconds,
-            kimi_bin=args.kimi_bin,
+    try:
+        payload = post_json(
+            path="/v1/kimi/start",
+            payload={
+                "task": args.task,
+                "workdir": args.workdir,
+                "timeout_seconds": args.timeout_seconds,
+                "kimi_bin": args.kimi_bin,
+            },
+            base_url=args.service_base_url,
+            timeout_seconds=max(float(args.timeout_seconds) + 5.0, 10.0),
         )
-    )
+    except RemoteAgentServiceError as exc:
+        print_json(
+            {
+                "type": "kimi_start_result",
+                "accepted": False,
+                "provider": "kimi",
+                "task": args.task,
+                "session": {
+                    "provider": "kimi",
+                    "state": "failed",
+                    "created_at": None,
+                    "workdir": args.workdir or os.getcwd(),
+                },
+                "worker": {
+                    "status": "service_unavailable",
+                    "mode": "hosted_wire",
+                    "transport": "kimi --wire",
+                    "timeout_seconds": args.timeout_seconds,
+                    "error": str(exc),
+                },
+                "service": {
+                    "base_url": args.service_base_url,
+                    "entrypoint": "remote_agent.service_client:post_json",
+                },
+            }
+        )
+        return 1
+
+    print_json(payload)
     return 0
 
 

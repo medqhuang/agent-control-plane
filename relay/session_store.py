@@ -32,7 +32,7 @@ _COMPLETED_REMOTE_STATUSES = {"finished", "completed"}
 
 
 def list_sessions() -> list[dict[str, object]]:
-    return [dict(session) for session in _SESSIONS_BY_ID.values()]
+    return [_public_session(session) for session in _SESSIONS_BY_ID.values()]
 
 
 def get_session(session_id: str) -> dict[str, object] | None:
@@ -69,6 +69,7 @@ def upsert_session_from_approval_request(
             "last_event_seq": int(event.get("seq", 0)),
             "last_event_type": str(event.get("type", "approval_request")),
             "updated_at": str(event.get("at", "")),
+            "control": {},
         }
         _SESSIONS_BY_ID[session_id] = session
     else:
@@ -92,6 +93,7 @@ def upsert_session_from_remote_event(
     session_id = str(event["session_id"])
     event_seq = int(event["seq"])
     session = _SESSIONS_BY_ID.get(session_id)
+    control = _normalize_control(event.get("control"))
     if session is None:
         session = {
             "id": session_id,
@@ -102,6 +104,7 @@ def upsert_session_from_remote_event(
             "last_event_seq": event_seq,
             "last_event_type": str(event["type"]),
             "updated_at": str(event["at"]),
+            "control": control,
         }
         _SESSIONS_BY_ID[session_id] = session
         return dict(session), True
@@ -117,6 +120,8 @@ def upsert_session_from_remote_event(
     session["last_event_seq"] = event_seq
     session["last_event_type"] = str(event["type"])
     session["updated_at"] = str(event["at"])
+    if control:
+        session["control"] = control
     return dict(session), True
 
 
@@ -131,3 +136,21 @@ def _status_from_remote_event(event: Mapping[str, object]) -> str:
             return "completed"
         return "failed"
     return _SESSION_STATUS_BY_REMOTE_EVENT_TYPE.get(event_type, "running")
+
+
+def _normalize_control(raw_control: object) -> dict[str, object]:
+    if not isinstance(raw_control, Mapping):
+        return {}
+    return {
+        key: value
+        for key, value in raw_control.items()
+        if isinstance(key, str)
+    }
+
+
+def _public_session(session: Mapping[str, object]) -> dict[str, object]:
+    return {
+        key: value
+        for key, value in session.items()
+        if key != "control"
+    }
