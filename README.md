@@ -11,11 +11,9 @@ instructions, and handle approvals without going back to each remote shell.
 
 - Release surface: `v1.0`
 - Current verified provider: `Kimi`
-- Current repo stage: `P9 Codex Support`
 
 `v1.0` has passed a live end-to-end release gate. Public release claims currently cover
-the verified `Kimi` path only. `Codex`, reliability reinforcement, and `Claude` are not
-part of the released surface yet.
+the verified `Kimi` path only. `Codex`and `Claude` are not part of the released surface yet.
 
 ## Features
 
