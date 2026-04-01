@@ -35,22 +35,41 @@ def list_sessions() -> list[dict[str, object]]:
     return [_public_session(session) for session in _SESSIONS_BY_ID.values()]
 
 
-def get_session(session_id: str) -> dict[str, object] | None:
-    session = _SESSIONS_BY_ID.get(session_id)
-    if session is None:
+def get_session(
+    session_id: str,
+    *,
+    remote_id: str | None = None,
+) -> dict[str, object] | None:
+    if remote_id is not None:
+        session = _SESSIONS_BY_ID.get(_session_key(remote_id, session_id))
+        if session is None:
+            return None
+        return dict(session)
+
+    matches = [
+        session
+        for session in _SESSIONS_BY_ID.values()
+        if str(session.get("id", "")) == session_id
+    ]
+    if not matches:
         return None
-    return dict(session)
+    if len(matches) == 1:
+        return dict(matches[0])
+    raise LookupError(f"session {session_id} is ambiguous across multiple remotes")
 
 
 def sync_session_status_from_approval(
     session_id: str,
     approval_status: str,
+    *,
+    remote_id: str | None = None,
 ) -> dict[str, object] | None:
-    session = _SESSIONS_BY_ID.get(session_id)
+    session = get_session(session_id, remote_id=remote_id)
     if session is None:
         return None
 
     session["status"] = _SESSION_STATUS_BY_APPROVAL_STATUS[approval_status]
+    _SESSIONS_BY_ID[_session_key(str(session["remote_id"]), session_id)] = session
     return dict(session)
 
 
@@ -58,12 +77,15 @@ def upsert_session_from_approval_request(
     event: Mapping[str, object],
 ) -> dict[str, object]:
     session_id = str(event["session_id"])
-    session = _SESSIONS_BY_ID.get(session_id)
+    remote_id = _remote_id_from_event(event)
+    key = _session_key(remote_id, session_id)
+    session = _SESSIONS_BY_ID.get(key)
     if session is None:
         session = {
             "id": session_id,
+            "remote_id": remote_id,
             "provider": str(event["provider"]),
-            "remote": str(event["remote"]),
+            "remote": remote_id,
             "title": str(event["title"]),
             "status": "waiting_approval",
             "last_event_seq": int(event.get("seq", 0)),
@@ -71,10 +93,11 @@ def upsert_session_from_approval_request(
             "updated_at": str(event.get("at", "")),
             "control": {},
         }
-        _SESSIONS_BY_ID[session_id] = session
+        _SESSIONS_BY_ID[key] = session
     else:
+        session["remote_id"] = remote_id
         session["provider"] = str(event["provider"])
-        session["remote"] = str(event["remote"])
+        session["remote"] = remote_id
         session["title"] = str(event["title"])
 
     session["status"] = _SESSION_STATUS_BY_APPROVAL_STATUS[str(event["status"])]
@@ -91,14 +114,17 @@ def upsert_session_from_remote_event(
     event: Mapping[str, object],
 ) -> tuple[dict[str, object], bool]:
     session_id = str(event["session_id"])
+    remote_id = _remote_id_from_event(event)
+    key = _session_key(remote_id, session_id)
     event_seq = int(event["seq"])
-    session = _SESSIONS_BY_ID.get(session_id)
+    session = _SESSIONS_BY_ID.get(key)
     control = _normalize_control(event.get("control"))
     if session is None:
         session = {
             "id": session_id,
+            "remote_id": remote_id,
             "provider": str(event["provider"]),
-            "remote": str(event["remote"]),
+            "remote": remote_id,
             "title": str(event["title"]),
             "status": _status_from_remote_event(event),
             "last_event_seq": event_seq,
@@ -106,15 +132,16 @@ def upsert_session_from_remote_event(
             "updated_at": str(event["at"]),
             "control": control,
         }
-        _SESSIONS_BY_ID[session_id] = session
+        _SESSIONS_BY_ID[key] = session
         return dict(session), True
 
     previous_seq = int(session.get("last_event_seq", 0))
     if event_seq <= previous_seq:
         return dict(session), False
 
+    session["remote_id"] = remote_id
     session["provider"] = str(event["provider"])
-    session["remote"] = str(event["remote"])
+    session["remote"] = remote_id
     session["title"] = str(event["title"])
     session["status"] = _status_from_remote_event(event)
     session["last_event_seq"] = event_seq
@@ -154,3 +181,14 @@ def _public_session(session: Mapping[str, object]) -> dict[str, object]:
         for key, value in session.items()
         if key != "control"
     }
+
+
+def _session_key(remote_id: str, session_id: str) -> str:
+    return f"{remote_id}::{session_id}"
+
+
+def _remote_id_from_event(event: Mapping[str, object]) -> str:
+    remote_id = str(event.get("remote_id", "")).strip()
+    if remote_id:
+        return remote_id
+    return str(event.get("remote", "")).strip()

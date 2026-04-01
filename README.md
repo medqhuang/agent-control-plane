@@ -6,12 +6,12 @@
 
 ## 项目状态
 
-- 已完成阶段：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`
-- 已完成子阶段：`P4.5-A Relay Integration`、`P4.5-B Session CLI`、`P4.5-C Hosted Session Contract`
-- 当前阶段：`P4.5 Hosted Session Usability`
-- 当前节点：`P4.5-D Recovery Contract`
-- 下一节点：`P5 Multi-Remote`
-- 下一阶段：`P5 Multi-Remote`
+- 已完成阶段：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`
+- 已完成子阶段：`P4.5-A Relay Integration`、`P4.5-B Session CLI`、`P4.5-C Hosted Session Contract`、`P4.5-D Recovery Contract`
+- 当前阶段：`P5 Multi-Remote`
+- 当前节点：`P5 Multi-Remote`
+- 下一节点：`P6 跨平台清理`
+- 下一阶段：`P6 跨平台清理`
 - `V1` 主线：`Kimi` + `remote-agent` + `Multi-Remote` + `Codex`
 - `V2` 计划：`Claude Code`
 
@@ -26,9 +26,9 @@
 
 当前优先事项：
 
-- 明确 `P4.5-D Recovery Contract`
-- 保持 hosted session CLI 与 contract 表述一致
-- 保持现有 `relay`、approval 幂等规则和本地控制端 MVP 不回退
+- 推进 `P5 Multi-Remote`
+- 保持 `P4` 与 `P4.5` 已完成链路稳定，不回退到旧 bridge 主路径
+- 保持 recovery 相关表述继续遵循当前 contract-only 边界，不把未实现恢复系统写成已支持
 
 ## 项目目标
 
@@ -165,7 +165,7 @@ flowchart LR
 - `relay` 当前仍为 in-memory 状态
 - 该链路已足以证明产品方向和审批闭环，但不应表述为生产级原生集成
 
-当前 hosted-session 主链路的剩余缺口主要在：
+`P4` 与 `P4.5` 收口后的当前边界主要在：
 
 - `attach` 尚未实现
 - Recovery 实现尚未正式落地
@@ -225,15 +225,19 @@ flowchart LR
 `已完成`
 
 - `P4` Remote-Agent Foundation
+- `P4.5` Hosted Session Usability
 - `P4.5-A` Relay Integration
+- `P4.5-B` Session CLI
+- `P4.5-C` Hosted Session Contract
+- `P4.5-D` Recovery Contract
 
 `当前推荐节点`
 
-- `P4.5-D` Recovery Contract
+- `P5` Multi-Remote
 
 `下一节点`
 
-- `P5` Multi-Remote
+- `P6` 跨平台清理
 
 `P4.5` 用于将托管 session 从“已经具备 foundation”补到“可以日常使用”的最小闭环，重点包括：
 
@@ -252,6 +256,12 @@ flowchart LR
   - 服务复活
   - 控制面状态恢复
   - provider 恢复边界说明
+
+`P4.5` 已完成，但其 recovery 部分当前仍是 contract-only 收口：
+
+- 已经写清恢复边界与最小 checkpoint / replay 契约
+- 还没有实现 checkpoint 持久化、pending approvals replay、控制面事件 replay 或 provider 执行现场恢复
+- 这些恢复实现工作继续留在后续可靠性阶段，而不是被误写成 `P4.5` 已落地能力
 
 当前 hosted session contract 约定如下：
 
@@ -295,6 +305,7 @@ flowchart LR
 
 - `P4`：完成远端执行边界迁移到 `remote-agent`
 - `P4.5`：补齐托管 session 的日常可用性
+- `P5`：把单 remote 控制面扩展成多 remote 聚合控制面
 - `P8`：落实“本地可关闭、远端持续运行、后续可重连恢复”的稳定能力
 - `P8`：同时完成“服务复活、状态重建、恢复边界说明”的正式实现与正式文档化
 
@@ -310,6 +321,8 @@ agent-control-plane/
 ├── P2_worklog.md
 ├── P2.5_worklog.md
 ├── P3_worklog.md
+├── P4_worklog.md
+├── P4.5_worklog.md
 ├── logs/
 ├── relay/
 ├── adapters/

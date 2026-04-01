@@ -42,13 +42,13 @@
 
 当前项目状态：
 
-- 已完成：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5-A`、`P4.5-B`、`P4.5-C`
-- 当前阶段：`P4.5 Hosted Session Usability`
-- 当前节点：`P4.5-D Recovery Contract`
-- 下一节点：`P5 Multi-Remote`
+- 已完成：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P4.5-A`、`P4.5-B`、`P4.5-C`、`P4.5-D`
+- 当前阶段：`P5 Multi-Remote`
+- 当前节点：`P5 Multi-Remote`
+- 下一节点：`P6 跨平台清理`
 - `V1` 暂不接入 `Claude Code`
 
-当前主线不是继续扩展旧 bridge，也不是提前进入 `P5`，而是先收口 `P4.5-D Recovery Contract`，再进入 `P5 Multi-Remote`。
+当前主线已完成 `P4` 与 `P4.5` 收口，下一步进入 `P5 Multi-Remote`。
 当前阶段也不以实时聊天 UI 或推理链可视化作为主目标；后续实时会话控制属于平台增强能力，不改变控制平面的产品定位。
 
 ## 当前融合原则
@@ -83,9 +83,9 @@
 - 允许将 `references/claude-code-haha-main/src/QueryEngine.ts`
   、`references/claude-code-haha-main/src/Tool.ts`
   、`references/claude-code-haha-main/src/bootstrap/state.ts`
-  与 `references/claude-code-haha-main/src/bridge/` 作为 `P4.5-D` 与 `P8` 的实现参考
+  与 `references/claude-code-haha-main/src/bridge/` 作为 `P5` 与 `P8` 的实现参考
 - 当前不因为本地已有 Claude Code 源码而提前进入 `Claude Code Support`
-- 当前不因为本地已有 Claude Code 源码而改变 `P4.5-D -> P5 -> P6/P7/P8` 的阶段顺序
+- 当前不因为本地已有 Claude Code 源码而改变 `P5 -> P6 -> P7 -> P8` 的阶段顺序
 - 当前不将 Claude 的内部实现细节直接抽象成项目的顶层架构
 
 ## 当前稳定基线
@@ -159,11 +159,12 @@ provider 原生接入策略固定如下：
 - `已完成`：`P2.5` Kimi bridge 收口
 - `已完成`：`P3` 本地控制端 MVP
 - `已完成`：`P4` Remote-Agent Foundation
+- `已完成`：`P4.5` Hosted Session Usability
 - `已完成`：`P4.5-A` Relay Integration
 - `已完成`：`P4.5-B` Session CLI
 - `已完成`：`P4.5-C` Hosted Session Contract
-- `当前`：`P4.5-D` Recovery Contract
-- `后续`：`P5` Multi-Remote
+- `已完成`：`P4.5-D` Recovery Contract
+- `当前`：`P5` Multi-Remote
 - `后续`：`P6` 跨平台清理
 - `后续`：`P7` Codex Support
 - `后续`：`P8` 可靠性增强
@@ -251,7 +252,7 @@ remote-agent kimi start --task "重构 auth 模块"
 
 - 将单 remote、单 provider 的托管 session 补成“真实可操作”的日常使用闭环
 
-在完成 `P4.5` 之前，不进入 `P5 Multi-Remote`。
+`P4.5` 已完成，当前进入 `P5 Multi-Remote`。
 
 ### 设立原因
 
@@ -266,7 +267,7 @@ remote-agent kimi start --task "重构 auth 模块"
 
 ### 子目标
 
-建议按以下 4 个子目标推进。
+`P4.5` 已按以下 4 个子目标完成收口。
 
 #### P4.5-A Relay Integration
 
@@ -339,7 +340,7 @@ remote-agent kimi start --task "重构 auth 模块"
 
 状态：
 
-- 当前推荐节点
+- 已完成
 
 目标：
 
@@ -368,6 +369,13 @@ remote-agent kimi start --task "重构 auth 模块"
 - `relay` 重启后的当前承诺仅限于：重新开始接收新的 session / approval / event；当前不承诺恢复旧 snapshot，也不承诺自动向远端补拉历史状态
 - provider 子进程异常退出后的当前边界是：hosted session 可能失败或消失；当前不承诺对 provider 原始执行现场做完整 `resume / reattach`
 - 当前必须避免三层能力混写：服务可复活，不等于控制面状态已恢复；控制面状态可恢复，也不等于 provider 执行现场一定完整恢复
+
+当前阶段结论：
+
+- `P4.5` 已完成
+- 当前已实现的是：单 remote、单 provider 下的 hosted session 日常使用闭环
+- 当前仍未实现的是：checkpoint 持久化、pending approvals replay、控制面事件 replay、`remote-agent` 重启恢复、provider 执行现场恢复
+- 因此下一阶段可以进入 `P5`，但恢复实现仍继续保留在 `P8`
 
 ### 范围
 
@@ -537,7 +545,7 @@ remote-agent kimi start --task "重构 auth 模块"
 - `V1` 更需要先收稳 `remote-agent` 与 `Multi-Remote`
 - `Kimi` 与 `Codex` 更适合当前控制平面主线
 - `Claude Code` 的最佳接入面更偏 `CLI / SDK + hooks`，适合作为第二阶段扩展
-- 即使本地已放入 Claude Code 源码，也只作为 `V2` 设计参考，不改变当前 `P4.5-D -> P5 -> P6/P7/P8` 的阶段顺序
+- 即使本地已放入 Claude Code 源码，也只作为 `V2` 设计参考，不改变当前 `P5 -> P6 -> P7 -> P8` 的阶段顺序
 
 ## Agent 分配建议
 
@@ -570,80 +578,59 @@ remote-agent kimi start --task "重构 auth 模块"
 - `P4.5-A` 已完成
 - `P4.5-B` 已完成
 - `P4.5-C` 已完成
-- 当前继续推进 `P4.5-D`
+- `P4.5-D` 已完成
+- `P4.5` 已完成
+- 当前进入 `P5`
 
 ## Agent 任务模板
 
 推荐模板：
 
 ```text
-当前阶段：P4.5 Hosted Session Usability
-
-当前子目标：
-P4.5-D Recovery Contract
+当前阶段：P5 Multi-Remote
 
 当前目标：
-把 hosted session 的最小恢复契约正式写清，覆盖本地控制端断开、remote-agent 重启、checkpoint、pending approvals 和控制面事件 replay 的边界，避免把“服务可复活”“控制面可恢复”“provider 执行现场完整恢复”混为一谈。
+将单 remote 控制台升级为多 remote 聚合，同时保持现有单 remote hosted-session、approval 一致性与 relay 语义不回退。
 
 当前前提：
 - P4 已完成
-- P4.5-A Relay Integration 已完成
-- P4.5-B Session CLI 已完成，其中 reply 已是硬要求且已实现
-- P4.5-C Hosted Session Contract 已完成
-- 这一步以 recovery contract 明确为主，不做大规模恢复实现扩张
+- P4.5 已完成
+- 单 remote 下的 remote-agent、relay、approval writeback 与 session CLI 已收口
+- recovery 当前仍以 contract 为准，不把未实现恢复系统写成既有能力
 
 这次只做：
-- 在 README.md、DEV.md、remote-agent/README.md 中明确 recovery contract
-- 至少写清以下内容：
-  - Local Desktop 断开或关闭后，远端 hosted session 的当前存活语义
-  - 恢复状态约定，例如：
-    - online
-    - offline
-    - awaiting_reconnect
-    如果当前未实现状态字段，要明确写成“目标契约”还是“当前既有状态”
-  - 最小 checkpoint 结构约定，至少说明应包含哪些信息：
-    - 最近会话上下文
-    - 当前工作目录
-    - 待审批项
-    - 时间戳
-    - 客户端连接标识
-  - pending approvals 的恢复与 replay 语义
-  - 控制面事件 replay 语义
-  - remote-agent 服务复活后的当前承诺
-  - relay / desktop 重启后的当前承诺
-  - provider 执行现场恢复边界；明确哪些不承诺
-- 明确区分三层能力：
-  - 服务复活
-  - 控制面状态恢复
-  - provider 执行现场恢复
-- 保持文档口径与当前实现一致，不把未实现能力写成已具备
-- 同步修正 DEV.md 里当前还停在旧 P4.5-B 的 Agent 任务模板，使其与当前 P4.5-D 一致
+- 建立最小 server registry 或等价 remote 列表
+- 让 `relay` 能同时读取多个 `remote-agent` endpoint 的最小状态
+- 聚合多个 remote 的 snapshot，并在本地控制端中展示
+- 为不可达 remote 标记 `disconnected` 或等价断连状态
+- 保持 approval 使用 `request_id`
+- 保持 session 事件顺序语义与现有 snapshot 一致性不回退
+- 保持 provider-specific 细节继续留在 `remote-agent`，不回退到旧 bridge 主链路
 
 这次不要做：
-- Multi-Remote
 - Codex
-- Claude Code 接入
-- desktop 新功能
+- Claude
+- desktop 大重构
 - 持久化实现
-- 完整 reconnect / resume / replay 系统实现
-- 为了写 contract 而偷偷扩张代码
-- 把 Claude Code 内部结构直接搬成当前项目架构
+- recovery 系统实现扩张
+- 回退去扩展旧 bridge
+- 提前进入 `P6`、`P7` 或 `P8`
 
 允许修改：
+- relay/
+- desktop/
+- 如确有必要，可最小修改 remote-agent/ 配置接入点
 - README.md
 - DEV.md
-- remote-agent/README.md
-- 如确有必要，可补极少量注释
-- 可补当天日志
+- 对应阶段 worklog
 
 完成标准：
-- recovery contract 在三份文档里口径一致
-- 明确写清 Local Desktop 断开、remote-agent 重启、relay 重启、provider 子进程异常退出时的当前边界
-- 明确写清 checkpoint / pending approvals / 控制面事件 replay 的最小契约
-- 不再把“服务能起来”表述成“执行现场一定能完整恢复”
-- DEV.md 的 Agent 任务模板已同步到当前 P4.5-D
+- 本地控制端能同时看到多个 remote 的最小聚合视图
+- 不可达 remote 有明确断连状态
+- 现有单 remote approval / session 语义不回退
+- README、DEV 与阶段 worklog 对当前 P5 目标表述一致
 - 告诉我你修改了哪些文件
-- 告诉我最终 recovery contract 的核心条目
+- 告诉我新增/修改了哪些接口或聚合路径
 ```
 
 ## 当前常用命令
@@ -673,4 +660,4 @@ npm start
 
 ## 总结
 
-`P0-P4`、`P4.5-A`、`P4.5-B` 与 `P4.5-C` 已完成。当前应优先完成 `P4.5-D Recovery Contract`。在 `P4.5` 完成之前，不进入 `P5 Multi-Remote`，也不回退既有 `relay`、desktop MVP 和 approval 一致性规则。
+`P0-P4` 与 `P4.5` 已完成。当前阶段已切换到 `P5 Multi-Remote`。后续顺序保持为 `P5 -> P6 -> P7 -> P8 -> V2 Claude`，不回退既有 `relay`、desktop MVP、hosted session CLI 与 approval 一致性规则，也不把当前 recovery contract 误写成已实现恢复系统。

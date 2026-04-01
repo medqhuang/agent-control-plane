@@ -8,6 +8,8 @@ from typing import Mapping
 from urllib import error
 from urllib import request
 
+from relay.server_registry import resolve_server_endpoint
+
 
 def post_approval_response(
     *,
@@ -18,10 +20,12 @@ def post_approval_response(
     timeout_seconds: float = 10.0,
 ) -> dict[str, object]:
     control = session.get("control")
-    if not isinstance(control, Mapping):
-        raise RuntimeError("remote-agent control metadata is missing")
-
-    base_url = str(control.get("base_url", "")).rstrip("/")
+    base_url = ""
+    if isinstance(control, Mapping):
+        base_url = str(control.get("base_url", "")).rstrip("/")
+    if not base_url:
+        remote_id = str(session.get("remote_id") or session.get("remote") or "").strip()
+        base_url = resolve_server_endpoint(remote_id).rstrip("/")
     if not base_url:
         raise RuntimeError("remote-agent control base_url is missing")
 

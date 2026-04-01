@@ -48,6 +48,8 @@ def upsert_pending_approval_request(
     approval, _ = _upsert_pending_approval(
         request_id=str(event["request_id"]),
         session_id=str(event["session_id"]),
+        remote_id=_remote_id_from_event(event),
+        provider=str(event.get("provider", "")),
         kind=str(event["kind"]),
         summary=str(event["summary"]),
         source_seq=int(event.get("seq", 0)),
@@ -66,6 +68,8 @@ def upsert_pending_approval_from_remote_event(
     return _upsert_pending_approval(
         request_id=str(payload["request_id"]),
         session_id=str(event["session_id"]),
+        remote_id=_remote_id_from_event(event),
+        provider=str(event.get("provider", "")),
         kind=str(payload["kind"]),
         summary=str(payload["summary"]),
         source_seq=int(event["seq"]),
@@ -77,6 +81,8 @@ def _upsert_pending_approval(
     *,
     request_id: str,
     session_id: str,
+    remote_id: str,
+    provider: str,
     kind: str,
     summary: str,
     source_seq: int,
@@ -87,6 +93,9 @@ def _upsert_pending_approval(
         approval = {
             "request_id": request_id,
             "session_id": session_id,
+            "remote_id": remote_id,
+            "remote": remote_id,
+            "provider": provider,
             "status": "pending",
             "kind": kind,
             "summary": summary,
@@ -104,9 +113,19 @@ def _upsert_pending_approval(
         return dict(approval), False
 
     approval["session_id"] = session_id
+    approval["remote_id"] = remote_id
+    approval["remote"] = remote_id
+    approval["provider"] = provider
     approval["kind"] = kind
     approval["summary"] = summary
     approval["status"] = "pending"
     approval["source_seq"] = source_seq
     approval["updated_at"] = updated_at
     return dict(approval), True
+
+
+def _remote_id_from_event(event: Mapping[str, object]) -> str:
+    remote_id = str(event.get("remote_id", "")).strip()
+    if remote_id:
+        return remote_id
+    return str(event.get("remote", "")).strip()

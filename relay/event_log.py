@@ -14,6 +14,7 @@ def append_approval_response_event(
     decision: str,
     approval_status: str,
     *,
+    remote_id: str = "",
     seq: int | None = None,
 ) -> dict[str, str | int]:
     global _NEXT_SEQ
@@ -27,6 +28,7 @@ def append_approval_response_event(
         "type": "approval_response",
         "request_id": request_id,
         "session_id": session_id,
+        "remote_id": remote_id,
         "decision": decision,
         "approval_status": approval_status,
     }
