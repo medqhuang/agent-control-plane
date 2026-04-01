@@ -1,13 +1,21 @@
 # remote-agent
 
-`remote-agent` is the minimal P4 foundation for remote native execution.
+`remote-agent` is the hosted remote execution base for `P4` and `P4.5`.
 
-This package intentionally does only two things right now:
+Current implemented capabilities:
 
-- start a minimal remote-agent HTTP service with `remote-agent serve`
-- accept a placeholder Kimi task with `remote-agent kimi start --task "..."`
+- run a minimal remote-agent HTTP service with `remote-agent serve`
+- keep the service alive on remote Linux via `systemctl --user`
+- start a hosted Kimi session with `remote-agent kimi start --task "..."`
+- launch Kimi through `kimi --wire`
+- report provider-agnostic session and approval events back to `relay`
+- accept approval decisions from `relay` and write them back to hosted Kimi sessions
 
-It does not yet integrate relay, `kimi --wire`, `systemctl --user`, or multi-remote orchestration.
+Current gaps before `P4.5` can close:
+
+- hosted session CLI is not complete yet
+- hosted session interaction contract is not fully documented yet
+- recovery contract is not fully documented or implemented yet
 
 ## Fixed Minimal Stack
 
@@ -28,6 +36,15 @@ python -m pip install -e ./remote-agent
 ```bash
 remote-agent serve
 remote-agent kimi start --task "refactor auth module"
+```
+
+Current `P4.5-B` target commands:
+
+```bash
+remote-agent sessions
+remote-agent watch <session_id>
+remote-agent reply <session_id> --message "..."
+remote-agent stop <session_id>
 ```
 
 `remote-agent serve` also accepts these environment variables:
@@ -84,11 +101,20 @@ tail -n 50 ~/.local/state/remote-agent/remote-agent.log
 tail -f ~/.local/state/remote-agent/remote-agent.log
 ```
 
-### Long-Running Limitation
+## Current Service APIs
 
-This P4 setup prefers `systemctl --user`, but it still depends on the target host's user-systemd policy.
+The current hosted-session path uses these service APIs:
 
-If `loginctl show-user "$USER" -p Linger --value` returns `no`, the service can run while the user has an active session, but it is not guaranteed to survive logout. In that case the blocker is host policy, not the `remote-agent` package.
+- `GET /healthz`
+- `GET /v1/runtime`
+- `POST /v1/kimi/start`
+- `POST /v1/approval-response`
+
+## Long-Running Requirement
+
+This setup prefers `systemctl --user` and requires user-systemd to support logout survival.
+
+The install script now checks `loginctl show-user "$USER" -p Linger --value` and attempts to enable linger automatically. If linger cannot be enabled, the script fails clearly instead of pretending logout-safe hosting already works.
 
 Some hosts also restrict `journalctl --user` access even for the owning user. This repo therefore treats the file log above as the minimal reliable log surface for P4.
 
@@ -115,10 +141,12 @@ remote-agent/
         │   ├── __init__.py
         │   └── kimi/
         │       ├── __init__.py
+        │       ├── host.py
         │       └── worker.py
         ├── relay/
         │   ├── __init__.py
         │   └── client.py
+        ├── service_client.py
         └── supervisor/
             ├── __init__.py
             └── runtime.py
@@ -126,6 +154,8 @@ remote-agent/
 
 ## Future Drop Points
 
-- `remote_agent.supervisor.runtime`: remote session lifecycle and worker orchestration
-- `remote_agent.providers.kimi.worker`: real `kimi --wire` execution
-- `remote_agent.relay.client`: relay status and approval reporting
+- `remote_agent.supervisor.runtime`: hosted-session lifecycle and request-to-session mapping
+- `remote_agent.providers.kimi.worker`: `kimi --wire` execution and standard event production
+- `remote_agent.providers.kimi.host`: hosted Kimi session runtime and decision writeback
+- `remote_agent.relay.client`: relay event reporting
+- `remote_agent.service_client`: local CLI to hosted remote-agent service routing

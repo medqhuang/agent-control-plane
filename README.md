@@ -6,9 +6,12 @@
 
 ## 项目状态
 
-- 已完成阶段：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`
-- 当前阶段：`P4 Remote-Agent Foundation`
-- 下一阶段：`P4.5 Hosted Session Usability`
+- 已完成阶段：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`
+- 已完成子阶段：`P4.5-A Relay Integration`
+- 当前阶段：`P4.5 Hosted Session Usability`
+- 当前节点：`P4.5-B Session CLI`
+- 下一节点：`P4.5-C Hosted Session Contract`
+- 下一阶段：`P5 Multi-Remote`
 - `V1` 主线：`Kimi` + `remote-agent` + `Multi-Remote` + `Codex`
 - `V2` 计划：`Claude Code`
 
@@ -23,9 +26,9 @@
 
 当前优先事项：
 
-- 完成远端 `remote-agent` 的基础执行边界
-- 将 Kimi 执行链路从本地 bridge 迁移到远端原生执行层
-- 为后续 `P4.5` 的托管 session 可用性闭环预留稳定接口与状态语义
+- 完成 `P4.5-B Session CLI`
+- 明确 `P4.5-C Hosted Session Contract`
+- 明确 `P4.5-D Recovery Contract`
 - 保持现有 `relay`、approval 幂等规则和本地控制端 MVP 不回退
 
 ## 项目目标
@@ -133,6 +136,11 @@ flowchart LR
 - 最小 `event log`
 - approval 幂等保护
 - approval / session 状态一致性
+- `remote-agent serve`
+- 远端 `systemctl --user` 长驻运行
+- `remote-agent kimi start --task "..."` 通过 `kimi --wire` 启动 hosted session
+- `remote-agent -> relay` 标准事件上报
+- `relay -> remote-agent -> kimi --wire` 的 approval decision / writeback 主链路
 - 本地控制端 `desktop/`
 - 单 relay session 列表
 - pending approvals 列表
@@ -148,14 +156,18 @@ flowchart LR
 
 ## 当前限制
 
-当前 `Kimi` 仍保留一条 bridge-based 基线，主要用于验证和过渡。其限制包括：
+旧 `Kimi bridge` 仍保留一条 bridge-based 基线，主要用于历史验证和过渡，不再是当前主路径。其限制包括：
 
 - `request_id` 仍由 adapter 派生，不是 Kimi 原生 ID
 - 远端 writeback 仍依赖 `tmux` 与当前 TUI 布局
 - `relay` 当前仍为 in-memory 状态
 - 该链路已足以证明产品方向和审批闭环，但不应表述为生产级原生集成
 
-`P4` 的主要工作，是将这条旧 bridge 从主使用路径中移除。
+当前 hosted-session 主链路的剩余缺口主要在：
+
+- `remote-agent sessions / watch / reply / stop` 仍未补齐
+- Hosted session contract 尚未正式写清
+- Recovery contract 尚未正式写清
 
 当前恢复能力仍存在明确缺口：
 
@@ -199,13 +211,19 @@ flowchart LR
 - `P2.5` Kimi bridge 收口与远端复核
 - `P3` 本地控制端 MVP
 
-`当前`
+`已完成`
 
 - `P4` Remote-Agent Foundation
+- `P4.5-A` Relay Integration
 
-`下一阶段`
+`当前推荐节点`
 
-- `P4.5` Hosted Session Usability
+- `P4.5-B` Session CLI
+
+`下一节点`
+
+- `P4.5-C` Hosted Session Contract
+- `P4.5-D` Recovery Contract
 
 `P4.5` 用于将托管 session 从“已经具备 foundation”补到“可以日常使用”的最小闭环，重点包括：
 

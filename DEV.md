@@ -39,12 +39,13 @@
 
 当前项目状态：
 
-- 已完成：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`
-- 当前阶段：`P4 Remote-Agent Foundation`
-- 下一阶段：`P4.5 Hosted Session Usability`
+- 已完成：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5-A`
+- 当前阶段：`P4.5 Hosted Session Usability`
+- 当前节点：`P4.5-B Session CLI`
+- 下一节点：`P4.5-C Hosted Session Contract`
 - `V1` 暂不接入 `Claude Code`
 
-当前主线不是继续扩展旧 bridge，而是先完成 `P4` 的远端执行边界迁移，再进入 `P4.5` 补齐托管 session 的可用性闭环。
+当前主线不是继续扩展旧 bridge，也不是提前进入 `P5`，而是继续完成 `P4.5` 的 hosted-session usability 闭环。
 
 ## 当前稳定基线
 
@@ -116,8 +117,10 @@ provider 原生接入策略固定如下：
 - `已完成`：`P2` Kimi 闭环
 - `已完成`：`P2.5` Kimi bridge 收口
 - `已完成`：`P3` 本地控制端 MVP
-- `当前`：`P4` Remote-Agent Foundation
-- `下一步`：`P4.5` Hosted Session Usability
+- `已完成`：`P4` Remote-Agent Foundation
+- `已完成`：`P4.5-A` Relay Integration
+- `当前`：`P4.5-B` Session CLI
+- `下一步`：`P4.5-C` Hosted Session Contract
 - `后续`：`P5` Multi-Remote
 - `后续`：`P6` 跨平台清理
 - `后续`：`P7` Codex Support
@@ -178,6 +181,11 @@ remote-agent kimi start --task "重构 auth 模块"
 - `Kimi --wire` 最小 worker 骨架可运行
 - 本地主链路开始脱离 `WSL -> SSH -> tmux -> TUI`
 
+### 当前判断
+
+- `P4` 已完成
+- 当前不再继续向 `P4` 回填 hosted-session usability 工作
+
 ### 方向性要求
 
 `P4` 需要先把语义定死，但不要求一次完成全部恢复能力：
@@ -220,6 +228,10 @@ remote-agent kimi start --task "重构 auth 模块"
 
 #### P4.5-A Relay Integration
 
+状态：
+
+- 已完成
+
 目标：
 
 - `remote-agent` 能将 session 状态、approval request 与关键生命周期事件真实送回 `relay`
@@ -231,6 +243,10 @@ remote-agent kimi start --task "重构 auth 模块"
 - `approve / reject` 可从 `relay` 回到 `remote-agent`
 
 #### P4.5-B Session CLI
+
+状态：
+
+- 当前推荐节点
 
 目标：
 
@@ -249,6 +265,10 @@ remote-agent kimi start --task "重构 auth 模块"
 
 #### P4.5-C Hosted Session Contract
 
+状态：
+
+- 下一节点
+
 目标：
 
 - 将“托管 session 的使用方式”定义清楚
@@ -261,6 +281,10 @@ remote-agent kimi start --task "重构 auth 模块"
 - `reply` 是非 attach 模式下的追加输入语义
 
 #### P4.5-D Recovery Contract
+
+状态：
+
+- 待 `P4.5-C` 后继续推进
 
 目标：
 
@@ -463,31 +487,56 @@ remote-agent kimi start --task "重构 auth 模块"
 推荐模板：
 
 ```text
-当前阶段：P4 Remote-Agent Foundation
+当前阶段：P4.5 Hosted Session Usability
+
+当前子目标：
+P4.5-B Session CLI
 
 当前目标：
-实现 remote-agent 的最小可运行骨架，并支持 Kimi session 启动。
+补齐远端 shell 下对 hosted session 的最小可用管理入口，让用户不只会 start，还能列出、观察、回复和停止已托管 session。
+
+当前前提：
+- remote-agent serve 已可通过 systemctl --user 长驻运行
+- remote-agent kimi start --task "..." 已走 kimi --wire
+- remote-agent -> relay -> approval-response -> remote-agent -> kimi 的最小闭环已成立
+- 这一步只做 session CLI，不做 Multi-Remote，不做 Codex，不做 desktop 新功能
 
 这次只做：
-- remote-agent supervisor 骨架
-- systemd --user service 模板
-- `remote-agent serve`
-- `remote-agent kimi start --task "..."`
+- 实现最小 session CLI：
+  - remote-agent sessions
+  - remote-agent watch <session_id>
+  - remote-agent reply <session_id> --message "..."
+  - remote-agent stop <session_id>
+- 如果实现成本合适，可补：
+  - remote-agent attach <session_id>
+  但 attach 不是这一步的硬要求
+- 让这些命令面向 hosted session 工作，而不是一次性 worker
+- 保持 provider-specific 细节尽量留在 remote-agent 内
+- 保持命令输出适合远端 shell 日常使用
+- 保持现有 relay / approval / decision 主链路不回退
 
 这次不要做：
 - Multi-Remote
-- Claude
 - Codex
+- Claude
 - desktop 重构
-- relay 重构
+- 持久化重构
+- 大规模 UI / 文档改写
+- 回退去扩展旧 bridge
 
 允许修改：
 - remote-agent/
-- 可选：README.md、DEV.md、当日日志
+- 如确有必要，可补 remote-agent/README.md 的最小使用说明
 
 完成标准：
-- 远端可启动 remote-agent
-- 告诉我如何验证 `remote-agent kimi start --task "..."`
+- 用户可以在远端 shell 里列出已托管 session
+- 用户可以观察指定 session 的最新状态
+- 用户可以对 hosted session 发送 reply
+- 用户可以停止指定 session
+- 告诉我你新增/修改了哪些文件
+- 告诉我每个命令的实际用法
+- 告诉我如何验证 sessions / watch / reply / stop 这四条路径
+- 如果 attach 暂不做，明确说明原因，不要顺手扩张范围
 ```
 
 ## 当前常用命令
@@ -517,4 +566,4 @@ npm start
 
 ## 总结
 
-`P0-P3` 已完成。当前应优先完成 `P4 Remote-Agent Foundation`，随后进入 `P4.5 Hosted Session Usability`。在此之前，不进入 `P5 Multi-Remote`，也不回退既有 `relay`、desktop MVP 和 approval 一致性规则。
+`P0-P4` 与 `P4.5-A` 已完成。当前应优先完成 `P4.5-B Session CLI`，随后进入 `P4.5-C Hosted Session Contract` 与 `P4.5-D Recovery Contract`。在 `P4.5` 完成之前，不进入 `P5 Multi-Remote`，也不回退既有 `relay`、desktop MVP 和 approval 一致性规则。
