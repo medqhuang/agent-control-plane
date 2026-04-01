@@ -9,7 +9,7 @@
 ## 当前阶段
 
 - 当前阶段：`P8 V1.0 Release`
-- 当前子目标：`P8 V1 Scope Freeze And Release Surface Audit`
+- 当前子目标：`P8 Live End-to-End Trial Verification And Blocker Triage`
 - 已完成：`P0-P7`、`P7-A`、`P7-B`、`P7-C`、`P7-D`
 - 下一阶段：`P9 Codex Support`
 - 当前唯一正式 provider：`Kimi`

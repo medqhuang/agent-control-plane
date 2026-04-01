@@ -2,22 +2,18 @@
 
 Updated: 2026-04-01
 
-## 当前状态
+## 褰撳墠鐘舵€?
+- 褰撳墠闃舵锛歚P8 V1.0 Release`
+- 褰撳墠瀛愮洰鏍囷細`P8 Live End-to-End Trial Verification And Blocker Triage`
+- 鍓嶅簭闃舵锛歚P7 Local Session Interaction UI` 宸插畬鎴?- 涓嬩竴闃舵锛歚P9 Codex Support`
 
-- 当前阶段：`P8 V1.0 Release`
-- 当前子目标：`P8 V1 Scope Freeze And Release Surface Audit`
-- 前序阶段：`P7 Local Session Interaction UI` 已完成
-- 下一阶段：`P9 Codex Support`
+## 鏈疆鐩爣
 
-## 本轮目标
+- 浠ュ綋鍓?repo 瀹為檯鑳藉姏涓哄噯锛岀粺涓€ `v1.0` 瀵瑰鍙ｅ緞
+- 鍐荤粨 `v1.0` 宸叉壙璇鸿兘鍔涗笌鏈壙璇鸿兘鍔?- 鏀跺彛 README銆丏EV銆丵uick Start銆乼rial / release / checklist 鏂囨。
+- 鏄庣‘ `P6.5` 鏂囨。涓庡綋鍓?`P8 v1.0` 鏂囨。鐨勫叧绯?- 杈撳嚭 blocker 瀹¤缁撴灉
 
-- 以当前 repo 实际能力为准，统一 `v1.0` 对外口径
-- 冻结 `v1.0` 已承诺能力与未承诺能力
-- 收口 README、DEV、Quick Start、trial / release / checklist 文档
-- 明确 `P6.5` 文档与当前 `P8 v1.0` 文档的关系
-- 输出 blocker 审计结果
-
-## 本轮审计文档
+## 鏈疆瀹¤鏂囨。
 
 - `README.md`
 - `DEV.md`
@@ -28,8 +24,7 @@ Updated: 2026-04-01
 - `desktop/README.md`
 - `remote-agent/README.md`
 
-## 本轮对照的实现入口
-
+## 鏈疆瀵圭収鐨勫疄鐜板叆鍙?
 - `relay/main.py`
 - `relay/remote_agent_client.py`
 - `remote-agent/src/remote_agent/app.py`
@@ -41,106 +36,86 @@ Updated: 2026-04-01
 - `desktop/src/renderer/features/sessions/render-session-detail.js`
 - `desktop/src/renderer/features/approvals/render-approval-list.js`
 
-## 审计结论
+## 瀹¤缁撹
 
-### 1. 当前 `v1.0` 已真实支持
+### 1. 褰撳墠 `v1.0` 宸茬湡瀹炴敮鎸?
+- 鏈湴 Windows source-run `desktop`
+- 鏈湴 operator-run `relay`
+- 杩滅 Linux `remote-agent`
+- `Kimi --wire` hosted session 鍚姩
+- multi-remote 鑱氬悎
+- approval 浠?`remote_id + request_id` 鍞竴瀹氫綅
+- 鏈湴 session list
+- 鏈湴 session detail / recent transcript
+- 鏈湴 UI 鎻愪氦 `reply`
+- 鏈湴 UI 澶勭悊 `approve / reject`
+- 杩滅 `remote-agent sessions / watch / reply / stop`
 
-- 本地 Windows source-run `desktop`
-- 本地 operator-run `relay`
-- 远端 Linux `remote-agent`
-- `Kimi --wire` hosted session 启动
-- multi-remote 聚合
-- approval 以 `remote_id + request_id` 唯一定位
-- 本地 session list
-- 本地 session detail / recent transcript
-- 本地 UI 提交 `reply`
-- 本地 UI 处理 `approve / reject`
-- 远端 `remote-agent sessions / watch / reply / stop`
-
-### 2. 当前不支持，且不能写成 `v1.0` 已支持
-
+### 2. 褰撳墠涓嶆敮鎸侊紝涓斾笉鑳藉啓鎴?`v1.0` 宸叉敮鎸?
 - `P9 Codex Support`
 - `P10` reconnect
 - `P10` checkpoint / replay
 - `P10` pending approvals replay
-- `P10` `remote-agent` 重启恢复
-- `P10` provider 执行现场恢复
+- `P10` `remote-agent` 閲嶅惎鎭㈠
+- `P10` provider 鎵ц鐜板満鎭㈠
 - `V2 Claude`
 - `attach`
-- 通用聊天工作台
-- token 流透传
-- 推理链可视化
-- installer / 云服务 / 多设备 / 账号体系
+- 閫氱敤鑱婂ぉ宸ヤ綔鍙?- token 娴侀€忎紶
+- 鎺ㄧ悊閾惧彲瑙嗗寲
+- installer / 浜戞湇鍔?/ 澶氳澶?/ 璐﹀彿浣撶郴
 
-### 3. `P6.5` 文档与 `P8` 的关系
-
+### 3. `P6.5` 鏂囨。涓?`P8` 鐨勫叧绯?
 - `logs/P6.5_trial_guide.md`
-  - 历史文件名保留
-  - 当前升级为 `v1.0` operator-led 最小试用指南
-- `logs/P6.5_release_notes.md`
-  - 历史文件名保留
-  - 当前升级为 `v1.0` release surface 说明
+  - 鍘嗗彶鏂囦欢鍚嶄繚鐣?  - 褰撳墠鍗囩骇涓?`v1.0` operator-led 鏈€灏忚瘯鐢ㄦ寚鍗?- `logs/P6.5_release_notes.md`
+  - 鍘嗗彶鏂囦欢鍚嶄繚鐣?  - 褰撳墠鍗囩骇涓?`v1.0` release surface 璇存槑
 - `logs/P6.5_launch_checklist.md`
-  - 历史文件名保留
-  - 当前升级为 `v1.0` release surface checklist
+  - 鍘嗗彶鏂囦欢鍚嶄繚鐣?  - 褰撳墠鍗囩骇涓?`v1.0` release surface checklist
 
-结论：
+缁撹锛?
+- `P6.5` 闃舵鏈韩鏄巻鍙查樁娈?- 杩欎笁浠芥枃浠朵笉鍐嶄唬琛ㄢ€滈」鐩粛鍋滅暀鍦?Beta鈥?- 杩欎笁浠芥枃浠跺綋鍓嶇户缁瓨鍦紝浣嗗唴瀹瑰繀椤昏窡闅?`P8 v1.0` 鍙ｅ緞鍚屾
 
-- `P6.5` 阶段本身是历史阶段
-- 这三份文件不再代表“项目仍停留在 Beta”
-- 这三份文件当前继续存在，但内容必须跟随 `P8 v1.0` 口径同步
-
-## blocker 审计结果
+## blocker 瀹¤缁撴灉
 
 ### Release-blocking
 
-- 本轮未识别出一个需要立刻修改 `relay/`、`desktop/` 或 `remote-agent/`
-  实现，才能让当前 `v1.0` 文档成立的 confirmed code blocker
-- 本轮没有执行真实远端完整链路复跑，因此“未发现 confirmed blocker”
-  不等于“已做 live E2E 验证并完全排除实现风险”
-
+- 鏈疆鏈瘑鍒嚭涓€涓渶瑕佺珛鍒讳慨鏀?`relay/`銆乣desktop/` 鎴?`remote-agent/`
+  瀹炵幇锛屾墠鑳借褰撳墠 `v1.0` 鏂囨。鎴愮珛鐨?confirmed code blocker
+- 鏈疆娌℃湁鎵ц鐪熷疄杩滅瀹屾暣閾捐矾澶嶈窇锛屽洜姝も€滄湭鍙戠幇 confirmed blocker鈥?  涓嶇瓑浜庘€滃凡鍋?live E2E 楠岃瘉骞跺畬鍏ㄦ帓闄ゅ疄鐜伴闄┾€?
 ### Non-blocking but must stay documented
 
-- `desktop` 仍是 source-run，不是 installer
-- `relay` 仍需手工启动
-- `remote-agent` 仍需手工补 env
-- 本地与远端网络检查仍需手工完成
-- 当前唯一正式 provider 是 `Kimi`
-- 本地正式承诺平台是 Windows；远端正式承诺平台是 Linux
-- `watch` 是单次读取
-- `attach` 未实现
-- `stop` 不能在 `approval_pending` 或 turn 运行中执行
-- `relay` 与 `remote-agent` 都仍是内存态
-
+- `desktop` 浠嶆槸 source-run锛屼笉鏄?installer
+- `relay` 浠嶉渶鎵嬪伐鍚姩
+- `remote-agent` 浠嶉渶鎵嬪伐琛?env
+- 鏈湴涓庤繙绔綉缁滄鏌ヤ粛闇€鎵嬪伐瀹屾垚
+- 褰撳墠鍞竴姝ｅ紡 provider 鏄?`Kimi`
+- 鏈湴姝ｅ紡鎵胯骞冲彴鏄?Windows锛涜繙绔寮忔壙璇哄钩鍙版槸 Linux
+- `watch` 鏄崟娆¤鍙?- `attach` 鏈疄鐜?- `stop` 涓嶈兘鍦?`approval_pending` 鎴?turn 杩愯涓墽琛?- `relay` 涓?`remote-agent` 閮戒粛鏄唴瀛樻€?
 ### Doc-only issues
 
-- README 仍保留 `P7` 之前的旧限制表述
-- README 与 P6.5 文档对 `logs/` 下文件的引用路径不统一
-- `logs/P6.5_trial_guide.md` 把阶段状态写成 `P7 Codex Support`
-- `logs/P6.5_release_notes.md` 把下一阶段写成 `P7 Codex Support`
-- `logs/P6.5_launch_checklist.md` 把下一阶段写成 `P7 Codex Support`
-- `desktop/README.md` 只写了 approval 观察面，没有同步 `session detail + reply`
-- `remote-agent/README.md` 仍按 `P4/P4.5` 与首发 Beta 口径表述，没有同步当前 `P8`
+- README 浠嶄繚鐣?`P7` 涔嬪墠鐨勬棫闄愬埗琛ㄨ堪
+- README 涓?P6.5 鏂囨。瀵?`logs/` 涓嬫枃浠剁殑寮曠敤璺緞涓嶇粺涓€
+- `logs/P6.5_trial_guide.md` 鎶婇樁娈电姸鎬佸啓鎴?`P7 Codex Support`
+- `logs/P6.5_release_notes.md` 鎶婁笅涓€闃舵鍐欐垚 `P7 Codex Support`
+- `logs/P6.5_launch_checklist.md` 鎶婁笅涓€闃舵鍐欐垚 `P7 Codex Support`
+- `desktop/README.md` 鍙啓浜?approval 瑙傚療闈紝娌℃湁鍚屾 `session detail + reply`
+- `remote-agent/README.md` 浠嶆寜 `P4/P4.5` 涓庨鍙?Beta 鍙ｅ緞琛ㄨ堪锛屾病鏈夊悓姝ュ綋鍓?`P8`
 
-## 本轮统一后的最小试用路径
+## 鏈疆缁熶竴鍚庣殑鏈€灏忚瘯鐢ㄨ矾寰?
+1. 鏈湴鍚姩 `relay`
+2. 鏈湴鍚姩 `desktop`
+3. 杩滅瀹夎骞跺惎鍔?`remote-agent`
+4. 杩滅鍚姩涓€涓?`Kimi` hosted session
+5. 鍦ㄦ湰鍦?UI 涓湅鍒?session 骞舵墦寮€ detail
+6. 鍦ㄦ湰鍦?UI 涓彁浜や竴杞?`reply`
+7. 鍦ㄦ湰鍦?UI 涓鐞嗕竴杞?approval
 
-1. 本地启动 `relay`
-2. 本地启动 `desktop`
-3. 远端安装并启动 `remote-agent`
-4. 远端启动一个 `Kimi` hosted session
-5. 在本地 UI 中看到 session 并打开 detail
-6. 在本地 UI 中提交一轮 `reply`
-7. 在本地 UI 中处理一轮 approval
-
-推荐用于验证 `reply -> approval` 闭环的 UI reply：
-
+鎺ㄨ崘鐢ㄤ簬楠岃瘉 `reply -> approval` 闂幆鐨?UI reply锛?
 ```text
 Create a file named acp-v1-proof.txt in the current directory, but ask for approval before writing anything.
 ```
 
-## 本轮修改结论
+## 鏈疆淇敼缁撹
 
 - 当前阶段仍停留在 `P8`
-- 当前子目标 `P8 V1 Scope Freeze And Release Surface Audit` 在文档层面完成
-- 当前没有因为本轮审计而前推到 `P9`
-- 如需进一步降低发布风险，下一轮应做真实远端完整链路验证或针对验证结果补最小实现修复
+- `P8 V1 Scope Freeze And Release Surface Audit` 已完成，文档状态已同步前推到 `P8 Live End-to-End Trial Verification And Blocker Triage`
+- 当前没有因为本轮审计而前推到 `P9`；如需进一步降低发布风险，下一轮应做真实远端完整链路验证或针对验证结果补最小实现修复
