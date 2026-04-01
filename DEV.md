@@ -42,22 +42,24 @@
 
 当前项目状态：
 
-- 已完成：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P4.5-A`、`P4.5-B`、`P4.5-C`、`P4.5-D`、`P5`、`P5-1`、`P5-1.5`、`P5-2`、`P5-3`、`P6-1`、`P6-2`、`P6-3`、`P6`
-- 当前阶段：`P6.5 Public Beta Release`
-- 当前子目标：`P6.5-5 Trial Operator Guide`
-- 当前节点：`P6.5 Public Beta Release`
-- 下一节点：`P7 Codex Support`
-- 下一阶段：`P7 Codex Support`
+- 已完成：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P4.5-A`、`P4.5-B`、`P4.5-C`、`P4.5-D`、`P5`、`P5-1`、`P5-1.5`、`P5-2`、`P5-3`、`P6-1`、`P6-2`、`P6-3`、`P6`、`P6.5`
+- 当前阶段：`P7 Codex Support`
+- 当前子目标：`P7 Codex Support`
+- 当前节点：`P7 Codex Support`
+- 下一节点：`P8 可靠性增强`
+- 下一阶段：`P8 可靠性增强`
 - `V1` 暂不接入 `Claude Code`
 
-当前主线已完成 `P5 Multi-Remote` 与 `P6 跨平台清理` 收口，当前进入 `P6.5 Public Beta Release`。
+当前主线已完成 `P5 Multi-Remote`、`P6 跨平台清理` 与 `P6.5 Public Beta Release`
+收口，当前进入 `P7 Codex Support`。
 当前阶段也不以实时聊天 UI 或推理链可视化作为主目标；后续实时会话控制属于平台增强能力，不改变控制平面的产品定位。
 `P6-1`、`P6-2` 与 `P6-3` 已完成；`P6` 整体已完成，阶段收口记录见 `P6_worklog.md`。
 `P6.5-1 Release Surface Definition`、`P6.5-2 Desktop Delivery Baseline`、
-`P6.5-3 Remote-Agent Trial Install Surface` 与
-`P6.5-4 Quick Start And Trial Docs` 已完成；当前转入
-`P6.5-5 Trial Operator Guide`，在已冻结的试用路径之上补齐适合 2-5 人
-小范围试用的讲解说明与操作脚本。
+`P6.5-3 Remote-Agent Trial Install Surface`、
+`P6.5-4 Quick Start And Trial Docs`、`P6.5-5 Trial Operator Guide`、
+`P6.5-6 Issue Templates And Feedback Intake` 与
+`P6.5-7 Release Notes And Launch Checklist` 已完成；当前阶段前推到
+`P7 Codex Support`。
 
 ## 当前融合原则
 
@@ -547,9 +549,14 @@ remote-agent kimi start --task "重构 auth 模块"
 
 ### 状态
 
-- 当前阶段
-- 当前节点：`P6.5 Public Beta Release`
-- 当前子目标：`P6.5-5 Trial Operator Guide`
+- 已完成
+- 已完成：`P6.5-1 Release Surface Definition`
+- 已完成：`P6.5-2 Desktop Delivery Baseline`
+- 已完成：`P6.5-3 Remote-Agent Trial Install Surface`
+- 已完成：`P6.5-4 Quick Start And Trial Docs`
+- 已完成：`P6.5-5 Trial Operator Guide`
+- 已完成：`P6.5-6 Issue Templates And Feedback Intake`
+- 已完成：`P6.5-7 Release Notes And Launch Checklist`
 
 ### 目标
 
@@ -592,8 +599,8 @@ remote-agent kimi start --task "重构 auth 模块"
 
 `P6.5-1` 的职责不是打包，而是先把第一次公开 Beta 的 release surface
 定义收稳，避免后续打包、文档与对外表述继续漂移。
-`P6.5-1` 已完成；后续已依次进入 `P6.5-2`、`P6.5-3` 与 `P6.5-4`，
-当前子目标为 `P6.5-5 Trial Operator Guide`。
+`P6.5-1` 已完成；`P6.5-2` 到 `P6.5-7` 也已依次完成，当前阶段前推到
+`P7 Codex Support`。
 
 此次定义固定为：
 
@@ -643,8 +650,8 @@ remote-agent kimi start --task "重构 auth 模块"
 
 `P6.5-2` 的职责是冻结首发公开 Beta 的 desktop 交付基线，而不是提前进入
 installer、签名包或自动更新阶段。
-`P6.5-2` 已完成；后续已进入 `P6.5-3` 与 `P6.5-4`，当前子目标为
-`P6.5-5 Trial Operator Guide`。
+`P6.5-2` 已完成；其后续依赖的 `P6.5-3` 到 `P6.5-7` 也已完成，当前阶段前推到
+`P7 Codex Support`。
 
 此次冻结为：
 
@@ -681,8 +688,8 @@ desktop 首发公开 Beta 的不承诺项：
 
 `P6.5-3` 的职责是冻结首发公开 Beta 的 remote-agent 试用安装面，而不是把
 当前仍需手工完成的远端配置步骤伪装成“已自动化安装”。
-`P6.5-3` 已完成；后续 `P6.5-4` 也已完成，当前子目标已前推到
-`P6.5-5 Trial Operator Guide`。
+`P6.5-3` 已完成；后续 `P6.5-4`、`P6.5-5`、`P6.5-6` 与 `P6.5-7` 也已完成，
+当前阶段前推到 `P7 Codex Support`。
 
 此次冻结为：
 
@@ -800,6 +807,9 @@ Kimi provider binary 发现方式固定为：
 `P6.5-5` 的职责不是先做截图或路演素材，而是先给出一份可执行的小范围试用
 讲解文档，让组织者能够按真实步骤带 2-5 人跑通一次试用。
 
+`P6.5-5` 已完成；后续 `P6.5-6` 与 `P6.5-7` 也已完成，当前阶段前推到
+`P7 Codex Support`。
+
 这一步建立在 `P6.5-4` 已完成的 Quick Start 基线上，但会进一步固定：
 
 - 试用目标与参与角色
@@ -817,6 +827,42 @@ Kimi provider binary 发现方式固定为：
 截图、demo capture 与路演材料当前不作为 `P6.5` 的编号阻塞项；它们可以在
 后续需要对外展示时补充，但不应先于试用讲解说明。
 
+### P6.5-6 Issue Templates And Feedback Intake
+
+`P6.5-6` 的职责不是做正式 support 流程，而是先给第一次公开 Beta 一个最小、
+统一、可回收的反馈入口，避免试用结果散落在聊天与口头记录里。
+
+这一步建立在 `P6.5-5` 已完成的 trial guide 基线上，但会进一步固定：
+
+- 首发 Beta 的反馈通过 repo issues 回收
+- 最小模板集至少包含 bug report、trial feedback、environment / setup
+- 模板字段与 `P6.5_trial_guide.md` 的反馈字段保持一致
+- 反馈入口明确收集角色、平台、版本、`kimi` 发现方式、session / approval /
+  `Approve` / `Reject` 结果、阻塞步骤、命令 / 日志片段与最小复现路径
+- 当前入口是 Beta intake，不写成正式客服或 SLA support 流程
+
+本阶段产物应优先落在 `.github/ISSUE_TEMPLATE/`，并由根 `README.md` 与
+`P6.5_trial_guide.md` 明确说明试用后如何反馈。
+
+### P6.5-7 Release Notes And Launch Checklist
+
+`P6.5-7` 的职责不是继续扩张试用范围，而是把第一次公开 Beta 的对外表述与
+发布前检查项收稳，确保当前版本可以被真实地、小范围地对外试用，而不夸大
+功能边界。
+
+这一步建立在 `P6.5-1` 到 `P6.5-6` 已完成的基线上，但会进一步固定：
+
+- 一份面向外部试用者的首发 Beta release notes
+- 一份面向发布前自查的 launch checklist
+- release notes 中明确包含项、不包含项、平台、provider、最小试用路径、
+  已知限制与反馈入口
+- launch checklist 中明确发布前必须核对的文档、表述与禁说项
+- 当前不把 contract-only、恢复系统、installer、`Codex` 或 `Claude Code`
+  写成已支持能力
+
+本阶段产物应优先落在 `P6.5_release_notes.md` 与
+`P6.5_launch_checklist.md`，并由根 `README.md` 提供入口。
+
 ### 面向 Beta 的最小交付清单
 
 - 一份明确写清“包含什么 / 不包含什么”的根目录 `README.md`
@@ -828,13 +874,17 @@ Kimi provider binary 发现方式固定为：
   `remote-agent + Kimi`
 - 一份明确的支持矩阵与已知限制列表
 - 一份首发试用讲解说明或操作脚本：`P6.5_trial_guide.md`
-- 一组面向试用者的 issue 模板
-- 一份首发 Beta release notes
+- 一组面向试用者的 issue 模板：
+  `.github/ISSUE_TEMPLATE/bug_report.md`、
+  `.github/ISSUE_TEMPLATE/trial_feedback.md`、
+  `.github/ISSUE_TEMPLATE/environment_setup.md`
+- 根 `README.md` 与 `P6.5_trial_guide.md` 中明确写出试用后反馈入口
+- 一份首发 Beta release notes：`P6.5_release_notes.md`
+- 一份首发 Beta launch checklist：`P6.5_launch_checklist.md`
 
 ### 建议后续子任务顺序
 
-当前已进入列表中的 `P6.5-5 Trial Operator Guide`。
-当前任务完成后，`P6.5-6` 应直接承接 issue 模板与反馈入口，而不是回头
+`P6.5` 的全部子任务已完成。当前阶段应切换到 `P7 Codex Support`，而不是回头
 继续重写 remote-agent 试用安装面。
 
 1. `P6.5-2 Desktop Delivery Baseline`
@@ -846,20 +896,21 @@ Kimi provider binary 发现方式固定为：
 3. `P6.5-4 Quick Start And Trial Docs`
    - completed
 4. `P6.5-5 Trial Operator Guide`
-   - 形成适合 2-5 人小范围试用的讲解说明与操作脚本
+   - completed
 5. `P6.5-6 Issue Templates And Feedback Intake`
-   - 准备 bug report / trial feedback / environment report 模板
+   - completed
 6. `P6.5-7 Release Notes And Launch Checklist`
-   - 产出对外 release notes、已知限制、试用注意事项与发布检查单
+   - completed
 
-截图与 demo capture 当前仅作为后续可选辅助材料，不是当前编号子目标，也不
-阻塞 `P6.5-6`。
+截图与 demo capture 当前仅作为后续可选辅助材料，不是 `P6.5` 的编号阻塞项。
 
 ### 完成标准
 
 - 新用户可以按照文档完成一次本地控制端启动
 - 新用户可以完成一次远端 `remote-agent` 安装与启动
 - 新用户可以启动一个 `Kimi` hosted session 并完成一次本地审批
+- 试用后反馈可通过统一模板回收，而不是散落在聊天里
+- 对外 release notes 与发布前检查单都已经落在仓库中
 - 仓库具备对外公开试用所需的最小说明、限制与反馈入口
 
 ## P7 Codex Support

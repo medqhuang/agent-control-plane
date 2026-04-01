@@ -6,13 +6,13 @@
 
 ## 项目状态
 
-- 已完成阶段：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P5`、`P6`
+- 已完成阶段：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P5`、`P6`、`P6.5`
 - 已完成子阶段：`P4.5-A Relay Integration`、`P4.5-B Session CLI`、`P4.5-C Hosted Session Contract`、`P4.5-D Recovery Contract`、`P5-1 Server Registry`、`P5-1.5 Approval Identity Hardening`、`P5-2 Desktop Multi-Remote View`、`P5-3 Remote Status Marking`、`P6-1 Platform Assumption Audit`、`P6-2 Runbook And Text Policy Cleanup`、`P6-3 Boundary Cleanup`
-- 当前阶段：`P6.5 Public Beta Release`
-- 当前子目标：`P6.5-5 Trial Operator Guide`
-- 当前节点：`P6.5 Public Beta Release`
-- 下一节点：`P7 Codex Support`
-- 下一阶段：`P7 Codex Support`
+- 当前阶段：`P7 Codex Support`
+- 当前子目标：`P7 Codex Support`
+- 当前节点：`P7 Codex Support`
+- 下一节点：`P8 可靠性增强`
+- 下一阶段：`P8 可靠性增强`
 - `V1` 主线：`Kimi` + `remote-agent` + `Multi-Remote` + `Codex`
 - `V2` 计划：`Claude Code`
 
@@ -35,7 +35,7 @@
 
 当前优先事项：
 
-- 推进 `P6.5 Public Beta Release`
+- 推进 `P7 Codex Support`
 - 保持 `P5` 已完成的多 remote 基线稳定，不回退为单 remote 视角
 - 保持 `P4` 与 `P4.5` 已完成链路稳定，不回退到旧 bridge 主路径
 - 保持 recovery 相关表述继续遵循当前 contract-only 边界，不把未实现恢复系统写成已支持
@@ -215,9 +215,10 @@ flowchart LR
 
 ## 首次公开 Beta 发布面
 
-`P6.5-1`、`P6.5-2`、`P6.5-3` 与 `P6.5-4` 已完成，并已将第一次公开 Beta
-固定为面向技术试用者的最小 source-run Beta，而不是带 installer 的完整桌面产品。
-当前子目标已切换为 `P6.5-5 Trial Operator Guide`。
+`P6.5-1`、`P6.5-2`、`P6.5-3`、`P6.5-4`、`P6.5-5`、`P6.5-6` 与 `P6.5-7` 已完成，
+并已将第一次公开 Beta 固定为面向技术试用者的最小 source-run Beta，而不是带
+installer 的完整桌面产品。
+`P6.5` 已整体完成；当前阶段已切换为 `P7 Codex Support`。
 
 本次 Beta 包含：
 
@@ -382,6 +383,8 @@ installer runbook。
 - `desktop/README.md`：只展开本地 Windows 侧职责
 - `remote-agent/README.md`：只展开远端 Linux 安装与启动面
 - `P6.5_trial_guide.md`：面向 2-5 人小范围试用组织者的讲解顺序、演示任务与反馈收集
+- `P6.5_release_notes.md`：面向外部试用者的最小 release notes
+- `P6.5_launch_checklist.md`：发布前检查项，避免误说成已支持的能力
 
 ### 1. 本地准备
 
@@ -780,6 +783,44 @@ tail -n 50 ~/.local/state/remote-agent/remote-agent.log
 remote-agent 试用安装面的最小说明见 `remote-agent/README.md`。
 如果这次不是自助试用，而是由本地 operator 带 2-5 人跑通一次真实演示，请直接使用
 `P6.5_trial_guide.md`。
+
+## 首发公开 Beta 反馈入口
+
+首发公开 Beta 的反馈入口固定为 repo issues 下的最小模板集，而不是正式 support
+流程。试用结束后，请按问题类型使用 `.github/ISSUE_TEMPLATE/` 下的模板：
+
+- `bug_report.md`
+  - 用于具体故障、行为回退、approval / session 流异常
+- `trial_feedback.md`
+  - 用于 operator / remote trial user / observer 的试用体验反馈
+- `environment_setup.md`
+  - 用于环境、安装、网络可达性与版本信息记录；可单独提交，也可从 bug / feedback
+    issue 中引用
+
+当前模板字段与 `P6.5_trial_guide.md` 对齐，至少收集：
+
+- 角色：`operator` / `remote trial user` / `observer`
+- 本地平台、远端平台
+- Python / Node / `kimi` 发现方式
+- 是否跑到 session 出现
+- 是否跑到 approval 出现
+- `Approve` / `Reject` 是否成功
+- 卡在哪一步
+- 相关命令与日志片段
+- 最小复现路径
+
+## 首发公开 Beta Release Notes And Launch Checklist
+
+首发公开 Beta 的对外表述与发布前检查项分别固定在：
+
+- `P6.5_release_notes.md`
+- `P6.5_launch_checklist.md`
+
+使用规则：
+
+- 对外介绍这次 Beta 时，以 `P6.5_release_notes.md` 为准
+- 发布前自查是否误写 installer、`Codex`、`Claude Code`、`attach`、恢复能力或
+  非当前平台支持时，以 `P6.5_launch_checklist.md` 为准
 
 ## 维护者说明
 
