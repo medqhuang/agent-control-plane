@@ -43,15 +43,15 @@
 当前项目状态：
 
 - 已完成：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P4.5-A`、`P4.5-B`、`P4.5-C`、`P4.5-D`、`P5`、`P5-1`、`P5-1.5`、`P5-2`、`P5-3`
-- 当前阶段：`P6 跨平台清理`
-- 当前节点：`P6-3 Boundary Cleanup`
-- 下一节点：`P6.5 Public Beta Release`
-- 下一阶段：`P6.5 Public Beta Release`
+- 当前阶段：`P6.5 Public Beta Release`
+- 当前节点：`P6.5 Public Beta Release`
+- 下一节点：`P7 Codex Support`
+- 下一阶段：`P7 Codex Support`
 - `V1` 暂不接入 `Claude Code`
 
-当前主线已完成 `P5 Multi-Remote` 收口，当前进入 `P6 跨平台清理`。
+当前主线已完成 `P5 Multi-Remote` 与 `P6 跨平台清理` 收口，当前进入 `P6.5 Public Beta Release`。
 当前阶段也不以实时聊天 UI 或推理链可视化作为主目标；后续实时会话控制属于平台增强能力，不改变控制平面的产品定位。
-`P6-1` 与 `P6-2` 已完成，当前节点切到 `P6-3 Boundary Cleanup`；阶段记录与剩余清理顺序见 `P6_worklog.md`。
+`P6-1`、`P6-2` 与 `P6-3` 已完成；`P6` 整体已完成，阶段收口记录见 `P6_worklog.md`。
 
 ## 当前融合原则
 
@@ -255,7 +255,7 @@ remote-agent kimi start --task "重构 auth 模块"
 
 - 将单 remote、单 provider 的托管 session 补成“真实可操作”的日常使用闭环
 
-`P4.5` 已完成；其后续 `P5 Multi-Remote` 也已完成，当前进入 `P6 跨平台清理`。
+`P4.5` 已完成；其后续 `P5 Multi-Remote` 与 `P6 跨平台清理` 也已完成，当前进入 `P6.5 Public Beta Release`。
 
 ### 设立原因
 
@@ -379,7 +379,7 @@ remote-agent kimi start --task "重构 auth 模块"
 - `P5` 也已在此基线上完成
 - 当前已实现的是：单 remote hosted-session 日常使用闭环，且已扩展到 multi-remote 聚合控制面
 - 当前仍未实现的是：checkpoint 持久化、pending approvals replay、控制面事件 replay、`remote-agent` 重启恢复、provider 执行现场恢复
-- 因此当前阶段可以进入 `P6`，但恢复实现仍继续保留在 `P8`
+- 因此 `P6` 已完成，当前阶段可以进入 `P6.5`，但恢复实现仍继续保留在 `P8`
 
 ### 范围
 
@@ -514,10 +514,10 @@ remote-agent kimi start --task "重构 auth 模块"
 
 ### 状态
 
-- 当前阶段
+- 已完成
 - 已完成：`P6-1 Platform Assumption Audit`
 - 已完成：`P6-2 Runbook And Text Policy Cleanup`
-- 当前节点：`P6-3 Boundary Cleanup`
+- 已完成：`P6-3 Boundary Cleanup`
 
 ### 目标
 
@@ -538,6 +538,11 @@ remote-agent kimi start --task "重构 auth 模块"
 - `P6-3` 继续保证 Linux deploy 壳层与 desktop 平台壳层不回流到共享核心
 
 ## P6.5 Public Beta Release
+
+### 状态
+
+- 当前阶段
+- 当前节点：`P6.5 Public Beta Release`
 
 ### 目标
 
@@ -680,7 +685,11 @@ remote-agent kimi start --task "重构 auth 模块"
 - `P5-2` 已完成
 - `P5-3` 已完成
 - `P5` 已完成
-- 当前进入 `P6`
+- `P6-1` 已完成
+- `P6-2` 已完成
+- `P6-3` 已完成
+- `P6` 已完成
+- 当前进入 `P6.5`
 
 ## Agent 任务模板
 
@@ -771,6 +780,15 @@ cd remote-agent
 bash scripts/install-systemd-user.sh --start
 ```
 
+`P6-3` 当前固定边界：
+
+- Linux deploy 壳层继续留在 `remote-agent/deploy/` 与 `remote-agent/scripts/`
+- desktop 平台分支继续留在 `desktop/main.js`
+- `relay/` 与 `remote-agent/src/remote_agent/` 不继续吸收 `systemctl`、`/bin/bash`、`loginctl`、Linux home 路径等 deploy 假设
+- `desktop/preload.js`、renderer 与 state 不继续吸收 macOS / Windows 平台分支
+
+非 PATH 安装的 `kimi` 应通过 `KIMI_BIN` 或 `--kimi-bin` 显式指定；共享 runtime 不再默认探测 Linux home 路径下的 provider 二进制。
+
 ### 当前远端部署策略
 
 `P4` 默认采用：
@@ -782,4 +800,4 @@ bash scripts/install-systemd-user.sh --start
 
 ## 总结
 
-`P0-P5` 已完成。当前阶段已切换到 `P6 跨平台清理`。当前节点为 `P6-3 Boundary Cleanup`，后续顺序保持为 `P6 -> P6.5 -> P7 -> P8 -> V2 Claude`，不回退既有 `relay`、desktop MVP、hosted session CLI 与 multi-remote approval / session 一致性规则，也不把当前 recovery contract 误写成已实现恢复系统。
+`P0-P6` 已完成。当前阶段已切换到 `P6.5 Public Beta Release`。后续顺序保持为 `P6.5 -> P7 -> P8 -> V2 Claude`，不回退既有 `relay`、desktop MVP、hosted session CLI 与 multi-remote approval / session 一致性规则，也不把当前 recovery contract 误写成已实现恢复系统。

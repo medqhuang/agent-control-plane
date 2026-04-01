@@ -6,12 +6,12 @@
 
 ## 项目状态
 
-- 已完成阶段：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P5`
+- 已完成阶段：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P5`、`P6`
 - 已完成子阶段：`P4.5-A Relay Integration`、`P4.5-B Session CLI`、`P4.5-C Hosted Session Contract`、`P4.5-D Recovery Contract`、`P5-1 Server Registry`、`P5-1.5 Approval Identity Hardening`、`P5-2 Desktop Multi-Remote View`、`P5-3 Remote Status Marking`
-- 当前阶段：`P6 跨平台清理`
-- 当前节点：`P6-3 Boundary Cleanup`
-- 下一节点：`P6.5 Public Beta Release`
-- 下一阶段：`P6.5 Public Beta Release`
+- 当前阶段：`P6.5 Public Beta Release`
+- 当前节点：`P6.5 Public Beta Release`
+- 下一节点：`P7 Codex Support`
+- 下一阶段：`P7 Codex Support`
 - `V1` 主线：`Kimi` + `remote-agent` + `Multi-Remote` + `Codex`
 - `V2` 计划：`Claude Code`
 
@@ -29,7 +29,7 @@
 
 当前优先事项：
 
-- 推进 `P6 跨平台清理`
+- 推进 `P6.5 Public Beta Release`
 - 保持 `P5` 已完成的多 remote 基线稳定，不回退为单 remote 视角
 - 保持 `P4` 与 `P4.5` 已完成链路稳定，不回退到旧 bridge 主路径
 - 保持 recovery 相关表述继续遵循当前 contract-only 边界，不把未实现恢复系统写成已支持
@@ -254,15 +254,15 @@ flowchart LR
 
 `当前推荐节点`
 
-- `P6-3` Boundary Cleanup
+- `P6.5` Public Beta Release
 
 `下一节点`
 
-- `P6.5` Public Beta Release
+- `P7` Codex Support
 
 `后续节点`
 
-- `P7` Codex Support
+- `P8` 可靠性增强
 
 `P4.5` 用于将托管 session 从“已经具备 foundation”补到“可以日常使用”的最小闭环，重点包括：
 
@@ -288,7 +288,7 @@ flowchart LR
 - 还没有实现 checkpoint 持久化、pending approvals replay、控制面事件 replay 或 provider 执行现场恢复
 - 这些恢复实现工作继续留在后续可靠性阶段，而不是被误写成 `P4.5` 已落地能力
 
-在此基础上，`P5 Multi-Remote` 也已完成，当前阶段切换为 `P6 跨平台清理`。
+在此基础上，`P5 Multi-Remote` 与 `P6 跨平台清理` 也已完成，当前阶段切换为 `P6.5 Public Beta Release`。
 
 `P6.5 Public Beta Release` 插在 `P6` 与 `P7` 之间，用于完成首次公开可试用版本所需的最小封装与发布准备，重点包括：
 
@@ -328,7 +328,6 @@ flowchart LR
 
 `V1 后续`
 
-- `P6` 跨平台清理
 - `P6.5` Public Beta Release
 - `P7` Codex Support
 - `P8` 可靠性增强
@@ -349,6 +348,15 @@ flowchart LR
 - `P6.5`：完成首次公开 Beta 发布准备，封装当前 `Kimi + remote-agent + desktop + Multi-Remote` 最小可试用交付，不等同于 `Codex` 阶段
 - `P8`：落实“本地可关闭、远端持续运行、后续可重连恢复”的稳定能力
 - `P8`：同时完成“服务复活、状态重建、恢复边界说明”的正式实现与正式文档化
+
+`P6-3` 当前固定边界：
+
+- Linux deploy 壳层继续留在 `remote-agent/deploy/` 与 `remote-agent/scripts/`
+- desktop 平台分支继续留在 `desktop/main.js` 这类壳层入口
+- `relay/` 与 `remote-agent/src/remote_agent/` 不继续吸收 `systemctl`、`/bin/bash`、`loginctl`、Linux home 路径等 deploy 假设
+- `desktop/preload.js`、renderer 与 state 不继续吸收 macOS / Windows 平台分支
+
+`P6` 已完成；上述边界作为进入 `P6.5 Public Beta Release` 前的固定底座继续保留。
 
 ## 仓库结构
 
@@ -404,6 +412,8 @@ remote-agent serve
 remote-agent kimi start --task "..."
 remote-agent sessions
 ```
+
+非 PATH 安装的 `kimi` 应通过 `KIMI_BIN` 或 `remote-agent kimi start --kimi-bin ...` 显式指定；共享 runtime 不再默认探测 Linux home 路径下的 provider 二进制。
 
 远端 Linux deploy 壳层继续留在 `remote-agent/deploy/` 与 `remote-agent/scripts/`，当前部署口径仍是从已部署的 repo 副本进入 `remote-agent/` 目录后执行：
 

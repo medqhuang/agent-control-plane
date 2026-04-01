@@ -1,14 +1,15 @@
 # P6 Worklog
 
 Updated: 2026-04-01
-Status: P6-1 Complete; P6-2 Complete
-Current Node: P6-3 Boundary Cleanup
-Next Stage: P6.5 Public Beta Release
+Status: P6 Complete
+Current Stage: P6.5 Public Beta Release
+Next Stage: P7 Codex Support
 
-This document records completed `P6-1 Platform Assumption Audit` and completed
-`P6-2 Runbook And Text Policy Cleanup`.
-The next active node inside `P6 Cross-Platform Cleanup` is
+This document records completed `P6-1 Platform Assumption Audit`, completed
+`P6-2 Runbook And Text Policy Cleanup`, and completed
 `P6-3 Boundary Cleanup`.
+`P6 Cross-Platform Cleanup` is now complete, and the project has entered
+`P6.5 Public Beta Release`.
 
 ## Audit Scope
 
@@ -33,6 +34,21 @@ The next active node inside `P6 Cross-Platform Cleanup` is
   editing.
 - The Linux deploy shell remains explicitly scoped to
   `remote-agent/deploy/` and `remote-agent/scripts/`.
+
+## P6-3 Completed Boundary Closures
+
+- Closed the remaining P6 blocker by fixing the boundary between shared runtime
+  code and Linux deploy shell.
+- Kept Linux deploy assumptions scoped to `remote-agent/deploy/` and
+  `remote-agent/scripts/`.
+- Kept desktop platform branching scoped to `desktop/main.js`; no platform
+  branch was added to `desktop/preload.js`, renderer, state, or `relay/`.
+- Removed the shared-runtime Linux home fallback for provider binary discovery
+  from `remote-agent/src/remote_agent/providers/kimi/worker.py`; shared runtime
+  now relies on PATH plus explicit `KIMI_BIN` / `--kimi-bin` override instead of
+  `~/.local/bin/kimi`.
+- Confirmed that `relay/` and `remote-agent/src/remote_agent/` do not absorb
+  `systemctl`, `/bin/bash`, `loginctl`, or Linux deploy-path assumptions.
 
 ## Module Findings
 
@@ -64,19 +80,16 @@ The next active node inside `P6 Cross-Platform Cleanup` is
 - `remote-agent/deploy/remote-agent.env.example:4-5` hardcodes
   `/home/your-user/...`.
 - `remote-agent/README.md:55-99` documents the same Linux-only service layout.
-- Provider startup still contains a Linux-home fallback candidate in
-  `remote-agent/src/remote_agent/providers/kimi/worker.py:23-26` via
-  `Path.home() / ".local" / "bin" / "kimi"`.
+- Provider startup no longer carries a shared-runtime Linux home fallback; PATH
+  plus explicit `KIMI_BIN` / `--kimi-bin` override is now the boundary-safe
+  discovery path.
 - HTTP JSON is explicit UTF-8 in
   `remote-agent/src/remote_agent/service_client.py:67-80` and
   `remote-agent/src/remote_agent/relay/client.py:82-105`.
 - The Kimi wire transport is explicit newline-delimited UTF-8 JSON in
   `remote-agent/src/remote_agent/providers/kimi/worker.py:560` and
   `remote-agent/src/remote_agent/providers/kimi/worker.py:595-624`.
-- P6 blocker status: the Linux deploy shell itself is non-blocking for P6
-  because the remote runtime target remains Linux; the real blocker is that the
-  repo currently lacks a root text-file policy to protect these LF-sensitive
-  shell and template files.
+- P6 blocker status: closed.
 
 ### desktop
 
@@ -100,9 +113,12 @@ The next active node inside `P6 Cross-Platform Cleanup` is
 - Closed in `P6-2`: the repo now has root `.gitattributes` and `.editorconfig`
   so LF-sensitive docs, scripts, templates, and common source/config text files
   are protected by repo-level policy.
-- Still open for `P6-3`: the boundary between "cross-platform core" and
-  "Linux-only remote deploy shell" must remain explicit so later work does not
-  generalize `systemctl` or `/bin/bash` into shared runtime abstractions.
+- Closed in `P6-3`: the boundary between "cross-platform core" and
+  "Linux-only remote deploy shell" is now explicit enough that later work does
+  not need to generalize `systemctl` or `/bin/bash` into shared runtime
+  abstractions.
+
+Status after current update: closed for `P6`.
 
 ## Non-Blocking Items That Can Stay Deferred
 
@@ -112,9 +128,8 @@ The next active node inside `P6 Cross-Platform Cleanup` is
   `/bin/bash` if the file stays clearly scoped to Linux service deployment.
 - `remote-agent/deploy/remote-agent.env.example` may keep a Linux home-path
   example if the file is explicitly documented as a Linux example.
-- `remote-agent/src/remote_agent/providers/kimi/worker.py:23-26` may keep the
-  `~/.local/bin/kimi` fallback for now because the remote provider runtime
-  target is still Linux.
+- Non-PATH provider binaries must now be passed explicitly through `KIMI_BIN`
+  or `--kimi-bin`; shared runtime no longer keeps a Linux home fallback.
 - `desktop/main.js:186-188` may keep the macOS lifecycle branch because it is a
   shell-level concern, not a cross-module core dependency.
 - The current UTF-8 HTTP and wire encoding paths are explicit and should be
@@ -142,11 +157,16 @@ Status: done.
   `remote-agent/src/remote_agent/`, `desktop/preload.js`, or renderer/state
   files.
 
+Status: done.
+
 ### 3. P6-3 Optional Provider Surface Tightening
 
 - If needed, move provider binary discovery defaults out of
   `remote-agent/src/remote_agent/providers/kimi/worker.py` into a clearly named
   Linux provider config helper or env-only fallback layer.
+
+Status: done with the minimal boundary-safe path: PATH plus explicit
+`KIMI_BIN` / `--kimi-bin` override.
 
 ### 4. Pre-P7 Re-Audit
 
@@ -162,3 +182,5 @@ Status: done.
   must remain explicitly outside the cross-platform core.
 - The first P6 cleanup work should therefore start with docs/runbook surface
   and repo text-file policy, not with a large runtime rewrite.
+- `P6-3` has now closed the remaining boundary blocker without changing the
+  current multi-remote approval / session / snapshot semantics.

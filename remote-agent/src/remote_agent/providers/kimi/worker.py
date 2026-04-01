@@ -22,7 +22,6 @@ DEFAULT_TIMEOUT_SECONDS = 90
 _KIMI_BIN_ENV = "KIMI_BIN"
 _KIMI_BIN_CANDIDATES = (
     "kimi",
-    str(Path.home() / ".local" / "bin" / "kimi"),
 )
 
 
