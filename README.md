@@ -9,7 +9,7 @@
 - 已完成阶段：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P5`、`P6`
 - 已完成子阶段：`P4.5-A Relay Integration`、`P4.5-B Session CLI`、`P4.5-C Hosted Session Contract`、`P4.5-D Recovery Contract`、`P5-1 Server Registry`、`P5-1.5 Approval Identity Hardening`、`P5-2 Desktop Multi-Remote View`、`P5-3 Remote Status Marking`、`P6-1 Platform Assumption Audit`、`P6-2 Runbook And Text Policy Cleanup`、`P6-3 Boundary Cleanup`
 - 当前阶段：`P6.5 Public Beta Release`
-- 当前子目标：`P6.5-3 Remote-Agent Trial Install Surface`
+- 当前子目标：`P6.5-5 Trial Operator Guide`
 - 当前节点：`P6.5 Public Beta Release`
 - 下一节点：`P7 Codex Support`
 - 下一阶段：`P7 Codex Support`
@@ -215,9 +215,9 @@ flowchart LR
 
 ## 首次公开 Beta 发布面
 
-`P6.5-1` 与 `P6.5-2` 已完成，并已将第一次公开 Beta 固定为面向技术试用者的
-最小 source-run Beta，而不是带 installer 的完整桌面产品。
-当前子目标已切换为 `P6.5-3 Remote-Agent Trial Install Surface`。
+`P6.5-1`、`P6.5-2`、`P6.5-3` 与 `P6.5-4` 已完成，并已将第一次公开 Beta
+固定为面向技术试用者的最小 source-run Beta，而不是带 installer 的完整桌面产品。
+当前子目标已切换为 `P6.5-5 Trial Operator Guide`。
 
 本次 Beta 包含：
 
@@ -371,6 +371,180 @@ remote-agent 首发试用安装基线：
 - macOS 菜单栏或灵动岛交互壳
 - 本地通知渲染
 
+## 首发公开 Beta 最小 Quick Start
+
+这一节只定义第一次公开 Beta 的最小试用路径。它面向技术试用者，
+默认你接受 source-run / source-install 与手工 env 配置；它不是
+installer runbook。
+
+文档分层如下：
+- 根 README：给出整条最小试用路径
+- `desktop/README.md`：只展开本地 Windows 侧职责
+- `remote-agent/README.md`：只展开远端 Linux 安装与启动面
+- `P6.5_trial_guide.md`：面向 2-5 人小范围试用组织者的讲解顺序、演示任务与反馈收集
+
+### 1. 本地准备
+
+本地机器当前固定为 Windows，至少需要：
+- Python `3.10+`
+- Node.js 与 npm
+- 当前仓库副本
+- 一个能从远端 Linux 访问到的本地 `relay` 地址
+
+### 2. 本地启动 relay
+
+在 repo 根目录执行：
+
+```powershell
+python -m pip install -r requirements-relay.txt
+python -m uvicorn relay.main:app --host 127.0.0.1 --port 8000
+```
+
+可选自检：
+
+```powershell
+curl.exe http://127.0.0.1:8000/v1/snapshot
+```
+
+这一步只会启动本地 `relay`。它不会自动启动 `desktop`，也不会替你配置
+任何远端 `remote-agent`。
+
+### 3. 本地启动 desktop
+
+打开第二个本地 shell：
+
+```powershell
+cd desktop
+npm install
+npm start
+```
+
+当前 `desktop` 默认连接 `http://127.0.0.1:8000`。如果你的本地 `relay`
+不在这个地址上，用 `RELAY_BASE_URL` 显式覆盖。首发公开 Beta 中，
+`desktop` 只负责观察 session / approval 并提交 `Approve` / `Reject`，
+不会自动拉起 `relay`。
+
+### 4. 远端 Linux 安装并启动 remote-agent
+
+把 `remote-agent/` 目录放到远端 Linux 主机后执行：
+
+```bash
+cd ~/agent-control-plane/remote-agent
+bash scripts/install-systemd-user.sh --start
+```
+
+当前脚本只会自动完成：
+- 创建 venv
+- `pip install -e <workdir>`
+- 写基础 host / port / log env
+- 渲染并启用 `systemd --user` service
+
+它不会自动写完 `relay` / `control` / `remote-name` 相关配置。
+
+### 5. 手工补充远端 env
+
+打开远端 `~/.config/remote-agent/remote-agent.env`，至少补充：
+
+```bash
+REMOTE_AGENT_RELAY_ENDPOINT=http://<local-relay-host>:8000
+REMOTE_AGENT_CONTROL_BASE_URL=http://<remote-host>:8711
+REMOTE_AGENT_REMOTE_NAME=<unique-remote-id>
+```
+
+说明：
+- `REMOTE_AGENT_RELAY_ENDPOINT` 必须从远端 Linux 可访问
+- `REMOTE_AGENT_CONTROL_BASE_URL` 必须从本地 `relay` 可回连
+- `REMOTE_AGENT_REMOTE_NAME` 对 multi-remote 试用强烈建议显式设置
+
+### 6. 手工确认网络互通
+
+在远端 Linux 上确认能访问本地 `relay`：
+
+```bash
+curl http://<local-relay-host>:8000/v1/snapshot
+```
+
+在本地 Windows 上确认能访问远端 `remote-agent` 控制面：
+
+```powershell
+curl.exe http://<remote-host>:8711/healthz
+```
+
+这些检查在首发公开 Beta 中仍是手工步骤，不是安装脚本已自动完成的内容。
+
+### 7. 检查 `Kimi --wire`
+
+在远端 Linux 上执行：
+
+```bash
+which kimi
+kimi info
+```
+
+当前 `remote-agent` 会按以下顺序发现 `Kimi`：
+1. `remote-agent kimi start --kimi-bin ...`
+2. `KIMI_BIN`
+3. PATH 中的 `kimi`
+
+如果 `kimi` 不在 PATH 中，不要把它写成“已自动发现”；要么手工设置
+`KIMI_BIN`，要么在启动命令里显式传 `--kimi-bin`。
+
+### 8. 启动一次远端 hosted session
+
+建议先进入一个远端测试目录，再启动一个更可能触发 approval 的任务：
+
+```bash
+mkdir -p ~/acp-beta-trial
+cd ~/acp-beta-trial
+remote-agent kimi start --task "Create a file named beta-proof.txt in the current directory, but ask for approval before you write anything."
+```
+
+如果 `kimi` 不在 PATH：
+
+```bash
+remote-agent kimi start --kimi-bin /path/to/kimi --task "Create a file named beta-proof.txt in the current directory, but ask for approval before you write anything."
+```
+
+随后可在远端继续验证：
+
+```bash
+remote-agent sessions
+tail -n 50 ~/.local/state/remote-agent/remote-agent.log
+```
+
+当前 contract 下，`remote-agent kimi start --task "..."` 只等待首个
+checkpoint 后返回；这个 checkpoint 可能是“本轮完成”，也可能是“出现
+approval request”。
+
+### 9. 在 desktop 中观察 session / approval
+
+保持本地 `desktop` 打开，观察：
+- session 列表里是否出现新的 hosted session
+- pending approvals 列表里是否出现待处理请求
+
+当前 UI 中，每条 approval 都暴露 `Approve` 与 `Reject` 按钮。
+
+### 10. 完成一次 approve / reject
+
+在本地 `desktop` 的 pending approvals 列表里：
+- 点击 `Approve`，验证决策会经 `relay` 回写到对应远端 session
+- 或点击 `Reject`，验证拒绝决策会沿同一路径回写
+
+如果这次任务没有触发 approval，而是直接跑到首个 checkpoint 并返回，
+说明链路本身可能已通，但这次任务不适合作为 approval 演示。此时应重新
+执行 `remote-agent kimi start --task "..."`，换成一个更可能触发写操作或
+其他受控动作的任务，而不是把“没有 approval”误写成桌面链路故障。
+
+### 当前仍需显式写出的手工边界
+
+- 本地 `relay` 仍需手工启动
+- `desktop` 仍是 source-run，不是 installer
+- 远端 `remote-agent` 仍需手工补 env
+- 本地与远端的网络互通仍需手工确认
+- approval 演示依赖于任务本身是否真的触发 provider 的审批点
+- 当前没有 `attach`
+- 当前没有持久化恢复、replay 或 `P8` 级恢复系统
+
 ## 路线图
 
 `已完成`
@@ -426,7 +600,7 @@ remote-agent 首发试用安装基线：
 - Desktop 的最小可运行交付形态
 - `remote-agent` 的最小安装与启动封装
 - Quick Start、平台支持矩阵与已知限制
-- 面向外部试用者的 release notes、issue 模板与演示材料
+- 面向外部试用者的 release notes、issue 模板与试用讲解说明
 
 `P6.5` 的定位是公开 Beta 发布，而不是 `Codex` 接入后的完整正式版本。
 `P6-1`、`P6-2` 与 `P6-3` 已全部完成，因此当前主线已从 `P6` 前推到 `P6.5`。
@@ -604,6 +778,8 @@ tail -n 50 ~/.local/state/remote-agent/remote-agent.log
 ```
 
 remote-agent 试用安装面的最小说明见 `remote-agent/README.md`。
+如果这次不是自助试用，而是由本地 operator 带 2-5 人跑通一次真实演示，请直接使用
+`P6.5_trial_guide.md`。
 
 ## 维护者说明
 

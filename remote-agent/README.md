@@ -1,5 +1,9 @@
 # remote-agent
 
+For an operator-led 2-5 person Beta trial, pair this file with the root
+`P6.5_trial_guide.md`. This readme freezes the remote install surface and the
+remote-side runtime steps only.
+
 `remote-agent` is the hosted remote execution base for `P4` and `P4.5`.
 
 Current implemented capabilities:
@@ -182,6 +186,123 @@ tail -n 50 ~/.local/state/remote-agent/remote-agent.log
 
 If `kimi` is not in PATH, pass `--kimi-bin /path/to/kimi` on the start
 command.
+
+### End-To-End Trial Path With Local Relay And Desktop
+
+Use this path only after the local operator is ready to run `relay` and
+`desktop`. The first public Beta keeps the local Windows side and the remote
+Linux side explicit. It does not hide them behind an installer.
+
+#### Local Windows Side
+
+1. Start the local relay from the repo root:
+
+```powershell
+python -m pip install -r requirements-relay.txt
+python -m uvicorn relay.main:app --host 127.0.0.1 --port 8000
+```
+
+2. Optional local relay check:
+
+```powershell
+curl.exe http://127.0.0.1:8000/v1/snapshot
+```
+
+3. In a second local shell, start desktop:
+
+```powershell
+cd desktop
+npm install
+npm start
+```
+
+4. Keep the desktop window open. The approval decision is completed there, not
+   in the remote Linux shell.
+
+#### Remote Linux Side
+
+1. Install and start the user service:
+
+```bash
+cd ~/agent-control-plane/remote-agent
+bash scripts/install-systemd-user.sh --start
+```
+
+2. Open `~/.config/remote-agent/remote-agent.env` and add the trial-specific
+   values that are still manual in the first public Beta:
+
+```bash
+REMOTE_AGENT_RELAY_ENDPOINT=http://<local-relay-host>:8000
+REMOTE_AGENT_CONTROL_BASE_URL=http://<remote-host>:8711
+REMOTE_AGENT_REMOTE_NAME=<unique-remote-id>
+```
+
+3. Confirm the remote host can reach the local relay:
+
+```bash
+curl http://<local-relay-host>:8000/v1/snapshot
+```
+
+4. Confirm the local machine can reach the remote control service:
+
+```powershell
+curl.exe http://<remote-host>:8711/healthz
+```
+
+5. Confirm the Kimi binary is available on the remote host:
+
+```bash
+which kimi
+kimi info
+```
+
+If `kimi` is not in PATH, set `KIMI_BIN=/path/to/kimi` or pass
+`--kimi-bin /path/to/kimi` on the start command.
+
+6. Start one hosted session from a remote test directory with a task that is
+   likely to require approval before it changes files:
+
+```bash
+mkdir -p ~/acp-beta-trial
+cd ~/acp-beta-trial
+remote-agent kimi start --task "Create a file named beta-proof.txt in the current directory, but ask for approval before you write anything."
+```
+
+If needed:
+
+```bash
+remote-agent kimi start --kimi-bin /path/to/kimi --task "Create a file named beta-proof.txt in the current directory, but ask for approval before you write anything."
+```
+
+7. After `start` returns, confirm the hosted session is present:
+
+```bash
+remote-agent sessions
+```
+
+8. Watch the local desktop for the new session and any pending approval. The
+   current approval list exposes `Approve` and `Reject` buttons.
+
+9. Complete one decision on the local desktop:
+- `Approve` sends an approval decision through `relay` back to the hosted
+  session.
+- `Reject` sends a rejection decision through the same path.
+
+10. If no approval appears, the session may have reached its first checkpoint
+    without needing one. For the Beta trial, rerun
+    `remote-agent kimi start --task "..."` with a task more likely to require
+    a write or another gated action.
+
+### Manual Boundaries That Must Stay Explicit
+
+- `install-systemd-user.sh` does not write
+  `REMOTE_AGENT_RELAY_ENDPOINT`,
+  `REMOTE_AGENT_CONTROL_BASE_URL`, or `REMOTE_AGENT_REMOTE_NAME`
+- network reachability still needs manual confirmation from both sides
+- `desktop` must already be running locally if the trial wants to observe the
+  approval flow live
+- the current path is source-install plus manual env editing, not a one-click
+  deploy flow
 
 ## Current Service APIs
 

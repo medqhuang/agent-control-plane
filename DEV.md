@@ -44,7 +44,7 @@
 
 - 已完成：`P0`、`P1`、`P1.5`、`P2`、`P2.5`、`P3`、`P4`、`P4.5`、`P4.5-A`、`P4.5-B`、`P4.5-C`、`P4.5-D`、`P5`、`P5-1`、`P5-1.5`、`P5-2`、`P5-3`、`P6-1`、`P6-2`、`P6-3`、`P6`
 - 当前阶段：`P6.5 Public Beta Release`
-- 当前子目标：`P6.5-3 Remote-Agent Trial Install Surface`
+- 当前子目标：`P6.5-5 Trial Operator Guide`
 - 当前节点：`P6.5 Public Beta Release`
 - 下一节点：`P7 Codex Support`
 - 下一阶段：`P7 Codex Support`
@@ -53,11 +53,11 @@
 当前主线已完成 `P5 Multi-Remote` 与 `P6 跨平台清理` 收口，当前进入 `P6.5 Public Beta Release`。
 当前阶段也不以实时聊天 UI 或推理链可视化作为主目标；后续实时会话控制属于平台增强能力，不改变控制平面的产品定位。
 `P6-1`、`P6-2` 与 `P6-3` 已完成；`P6` 整体已完成，阶段收口记录见 `P6_worklog.md`。
-`P6.5-1 Release Surface Definition` 与
-`P6.5-2 Desktop Delivery Baseline` 已完成；当前转入
-`P6.5-3 Remote-Agent Trial Install Surface`，优先固定远端试用安装、
-配置、启动与验证的最小路径，为后续 `P6.5-4 Quick Start And Trial Docs`
-提供稳定输入。
+`P6.5-1 Release Surface Definition`、`P6.5-2 Desktop Delivery Baseline`、
+`P6.5-3 Remote-Agent Trial Install Surface` 与
+`P6.5-4 Quick Start And Trial Docs` 已完成；当前转入
+`P6.5-5 Trial Operator Guide`，在已冻结的试用路径之上补齐适合 2-5 人
+小范围试用的讲解说明与操作脚本。
 
 ## 当前融合原则
 
@@ -549,7 +549,7 @@ remote-agent kimi start --task "重构 auth 模块"
 
 - 当前阶段
 - 当前节点：`P6.5 Public Beta Release`
-- 当前子目标：`P6.5-3 Remote-Agent Trial Install Surface`
+- 当前子目标：`P6.5-5 Trial Operator Guide`
 
 ### 目标
 
@@ -578,7 +578,7 @@ remote-agent kimi start --task "重构 auth 模块"
 - 已知限制说明
 - release notes
 - issue 模板
-- 截图或演示材料
+- 试用讲解说明或操作脚本
 
 ### 不包含
 
@@ -592,8 +592,8 @@ remote-agent kimi start --task "重构 auth 模块"
 
 `P6.5-1` 的职责不是打包，而是先把第一次公开 Beta 的 release surface
 定义收稳，避免后续打包、文档与对外表述继续漂移。
-`P6.5-1` 已完成；后续已依次进入 `P6.5-2`，当前子目标为
-`P6.5-3 Remote-Agent Trial Install Surface`。
+`P6.5-1` 已完成；后续已依次进入 `P6.5-2`、`P6.5-3` 与 `P6.5-4`，
+当前子目标为 `P6.5-5 Trial Operator Guide`。
 
 此次定义固定为：
 
@@ -643,7 +643,8 @@ remote-agent kimi start --task "重构 auth 模块"
 
 `P6.5-2` 的职责是冻结首发公开 Beta 的 desktop 交付基线，而不是提前进入
 installer、签名包或自动更新阶段。
-`P6.5-2` 已完成；当前子目标已前推到 `P6.5-3 Remote-Agent Trial Install Surface`。
+`P6.5-2` 已完成；后续已进入 `P6.5-3` 与 `P6.5-4`，当前子目标为
+`P6.5-5 Trial Operator Guide`。
 
 此次冻结为：
 
@@ -680,6 +681,8 @@ desktop 首发公开 Beta 的不承诺项：
 
 `P6.5-3` 的职责是冻结首发公开 Beta 的 remote-agent 试用安装面，而不是把
 当前仍需手工完成的远端配置步骤伪装成“已自动化安装”。
+`P6.5-3` 已完成；后续 `P6.5-4` 也已完成，当前子目标已前推到
+`P6.5-5 Trial Operator Guide`。
 
 此次冻结为：
 
@@ -792,6 +795,28 @@ Kimi provider binary 发现方式固定为：
   pending approvals 或事件视图
 - 当前不承诺 provider 原始执行现场 `resume / reattach`
 
+### P6.5-5 Trial Operator Guide
+
+`P6.5-5` 的职责不是先做截图或路演素材，而是先给出一份可执行的小范围试用
+讲解文档，让组织者能够按真实步骤带 2-5 人跑通一次试用。
+
+这一步建立在 `P6.5-4` 已完成的 Quick Start 基线上，但会进一步固定：
+
+- 试用目标与参与角色
+- 试用前准备与组织方式
+- 本地 operator 的最小操作顺序
+- 远端 Linux 试用者的最小操作顺序
+- 一次真实 approval 演示路径
+- 当任务没有触发 approval 时的换任务策略
+- 常见失败点与快速排查顺序
+- 试用结束后应收集的最小反馈字段
+
+本阶段产物应优先写入 `P6.5_trial_guide.md`，并由根 `README.md`、
+`desktop/README.md` 与 `remote-agent/README.md` 提供入口引用。
+
+截图、demo capture 与路演材料当前不作为 `P6.5` 的编号阻塞项；它们可以在
+后续需要对外展示时补充，但不应先于试用讲解说明。
+
 ### 面向 Beta 的最小交付清单
 
 - 一份明确写清“包含什么 / 不包含什么”的根目录 `README.md`
@@ -802,31 +827,33 @@ Kimi provider binary 发现方式固定为：
 - 一条可操作的最小 Quick Start：本地 `relay + desktop`，远端
   `remote-agent + Kimi`
 - 一份明确的支持矩阵与已知限制列表
-- 一组首发截图或演示材料
+- 一份首发试用讲解说明或操作脚本：`P6.5_trial_guide.md`
 - 一组面向试用者的 issue 模板
 - 一份首发 Beta release notes
 
 ### 建议后续子任务顺序
 
-当前已进入列表中的 `P6.5-3 Remote-Agent Trial Install Surface`。
-当前任务完成后，`P6.5-4` 应直接承接 Quick Start 试用路径，而不是回头继续
-重写 remote-agent 试用安装面。
+当前已进入列表中的 `P6.5-5 Trial Operator Guide`。
+当前任务完成后，`P6.5-6` 应直接承接 issue 模板与反馈入口，而不是回头
+继续重写 remote-agent 试用安装面。
 
 1. `P6.5-2 Desktop Delivery Baseline`
    - 固定 desktop 首发交付形态
    - 明确 source-run 仍可接受的原因与边界
    - 不进入完整 installer
 2. `P6.5-3 Remote-Agent Trial Install Surface`
-   - 收口远端试用安装路径
-   - 明确 env 模板、手工步骤与最小验证命令
+   - completed
 3. `P6.5-4 Quick Start And Trial Docs`
-   - 产出一条从启动到审批完成的最小公开试用路径
-4. `P6.5-5 Screenshots And Demo Capture`
-   - 录制或截取 desktop、multi-remote、approval 流程
+   - completed
+4. `P6.5-5 Trial Operator Guide`
+   - 形成适合 2-5 人小范围试用的讲解说明与操作脚本
 5. `P6.5-6 Issue Templates And Feedback Intake`
    - 准备 bug report / trial feedback / environment report 模板
 6. `P6.5-7 Release Notes And Launch Checklist`
    - 产出对外 release notes、已知限制、试用注意事项与发布检查单
+
+截图与 demo capture 当前仅作为后续可选辅助材料，不是当前编号子目标，也不
+阻塞 `P6.5-6`。
 
 ### 完成标准
 
