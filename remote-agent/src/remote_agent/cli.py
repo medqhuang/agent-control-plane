@@ -212,12 +212,17 @@ def _handle_stop(args: argparse.Namespace) -> int:
 
 
 def _handle_kimi_start(args: argparse.Namespace) -> int:
+    # In service mode, the remote-agent daemon has its own cwd. When the user
+    # omits --workdir, preserve the CLI invocation cwd explicitly so hosted
+    # sessions match the documented "cd <dir> && remote-agent kimi start ..."
+    # flow.
+    workdir = args.workdir if args.workdir is not None else os.getcwd()
     return _print_service_result(
         lambda: post_json(
             path="/v1/kimi/start",
             payload={
                 "task": args.task,
-                "workdir": args.workdir,
+                "workdir": workdir,
                 "timeout_seconds": args.timeout_seconds,
                 "kimi_bin": args.kimi_bin,
             },
@@ -225,7 +230,7 @@ def _handle_kimi_start(args: argparse.Namespace) -> int:
             timeout_seconds=max(float(args.timeout_seconds) + 5.0, 10.0),
         ),
         task=args.task,
-        workdir=args.workdir,
+        workdir=workdir,
         timeout_seconds=args.timeout_seconds,
         service_base_url=args.service_base_url,
     )
