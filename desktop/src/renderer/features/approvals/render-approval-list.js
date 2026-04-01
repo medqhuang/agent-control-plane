@@ -121,6 +121,7 @@ export function renderApprovalList(
   approvals,
   {
     approvalActionByKey = {},
+    contextApprovalKey = "",
   } = {},
 ) {
   container.replaceChildren();
@@ -173,6 +174,13 @@ export function renderApprovalList(
       item.className = submittingDecision
         ? "list-item is-busy"
         : "list-item";
+      if (approvalKey === contextApprovalKey) {
+        item.classList.add("is-selected");
+      }
+      item.dataset.approvalKey = approvalKey;
+      item.dataset.requestId = approval.requestId;
+      item.dataset.remoteId = approval.remoteId;
+      item.dataset.sessionId = approval.sessionId;
 
       const title = document.createElement("div");
       title.className = "item-title";

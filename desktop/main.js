@@ -3,6 +3,7 @@ const { app, BrowserWindow, ipcMain } = require("electron");
 
 const DEFAULT_RELAY_BASE_URL = "http://127.0.0.1:8000";
 const RELAY_TIMEOUT_MS = 3000;
+const RELAY_REPLY_TIMEOUT_MS = 95000;
 
 function getRelayBaseUrl() {
   return process.env.RELAY_BASE_URL || DEFAULT_RELAY_BASE_URL;
@@ -143,6 +144,32 @@ async function submitApprovalDecisionPayload({
   };
 }
 
+async function submitSessionReplyPayload({
+  sessionId,
+  remoteId = "",
+  message,
+}) {
+  const relayBaseUrl = getRelayBaseUrl();
+  const replyUrl = new URL(
+    `/v1/sessions/${encodeURIComponent(sessionId)}/reply`,
+    relayBaseUrl,
+  ).toString();
+  const reply = await requestJson(replyUrl, {
+    method: "POST",
+    body: {
+      remote_id: remoteId,
+      message,
+    },
+    timeoutMs: RELAY_REPLY_TIMEOUT_MS,
+  });
+
+  return {
+    relayBaseUrl,
+    respondedAt: new Date().toISOString(),
+    reply,
+  };
+}
+
 function createMainWindow() {
   const window = new BrowserWindow({
     width: 1120,
@@ -210,6 +237,30 @@ ipcMain.handle("relay:submitApprovalDecision", async (_event, payload) => {
     requestId: payload.requestId,
     remoteId: typeof payload.remoteId === "string" ? payload.remoteId : "",
     decision: payload.decision,
+  });
+});
+
+ipcMain.handle("relay:submitSessionReply", async (_event, payload) => {
+  if (!payload || typeof payload !== "object") {
+    throw new Error("session reply payload is required");
+  }
+
+  if (typeof payload.sessionId !== "string" || payload.sessionId.trim() === "") {
+    throw new Error("session_id is required");
+  }
+
+  if ("remoteId" in payload && typeof payload.remoteId !== "string") {
+    throw new Error("session remote_id must be a string when provided");
+  }
+
+  if (typeof payload.message !== "string" || payload.message.trim() === "") {
+    throw new Error("reply message is required");
+  }
+
+  return submitSessionReplyPayload({
+    sessionId: payload.sessionId.trim(),
+    remoteId: typeof payload.remoteId === "string" ? payload.remoteId.trim() : "",
+    message: payload.message,
   });
 });
 

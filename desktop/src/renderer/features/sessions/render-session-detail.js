@@ -156,6 +156,233 @@ function createTranscriptEntry(label, value, { code = false } = {}) {
   return entry;
 }
 
+function createApprovalDecisionButton(
+  label,
+  verb,
+  requestId,
+  remoteId,
+  decision,
+  submittingDecision,
+) {
+  const button = document.createElement("button");
+  const isSubmitting = submittingDecision === decision;
+  button.type = "button";
+  button.className = `action-button is-${decision}`;
+  button.dataset.requestId = requestId;
+  button.dataset.remoteId = remoteId;
+  button.dataset.approvalDecision = decision;
+  button.disabled = Boolean(submittingDecision) || requestId === "";
+  button.textContent = isSubmitting ? `${verb}...` : label;
+  return button;
+}
+
+function createApprovalContextSection(
+  sessionId,
+  remoteId,
+  {
+    hostedState = "",
+    pendingRequestId = "",
+    approvalRequest = {},
+    sessionApproval = null,
+    sessionApprovalSubmittingDecision = "",
+  } = {},
+) {
+  const approval = sessionApproval && typeof sessionApproval === "object"
+    ? sessionApproval
+    : {};
+  const requestId = readField(
+    approval,
+    "request_id",
+    readField(approvalRequest, "request_id", pendingRequestId),
+  );
+  const summary = readField(
+    approval,
+    "summary",
+    readField(approvalRequest, "summary", "This hosted session is waiting for approval."),
+  );
+  const kind = readField(
+    approval,
+    "kind",
+    readField(approvalRequest, "kind", "-"),
+  );
+  const section = document.createElement("section");
+  section.className = "detail-section approval-context-section";
+  section.append(createSectionTitle("Approval Context"));
+
+  const statusText = document.createElement("p");
+  statusText.className = "reply-status is-running";
+  if (sessionApprovalSubmittingDecision === "approve") {
+    statusText.textContent =
+      "Approving through relay. Waiting for the hosted session to continue.";
+  } else if (sessionApprovalSubmittingDecision === "reject") {
+    statusText.textContent =
+      "Rejecting through relay. Waiting for the hosted session to continue.";
+  } else {
+    statusText.textContent =
+      "This session is paused at approval_pending. Resolve the approval here or locate it in the approvals list.";
+  }
+  section.append(statusText);
+
+  const detailGrid = document.createElement("div");
+  detailGrid.className = "item-detail-grid";
+  detailGrid.append(
+    createDetailRow("session_id", sessionId),
+    createDetailRow("remote_id", remoteId),
+    createDetailRow("request_id", requestId || "-"),
+    createDetailRow("kind", kind || "-"),
+    createDetailRow("hosted_state", hostedState || "-"),
+    createDetailRow("summary", summary || "-"),
+  );
+  section.append(detailGrid);
+
+  const actions = document.createElement("div");
+  actions.className = "approval-actions";
+  actions.append(
+    createApprovalDecisionButton(
+      "Approve",
+      "Approving",
+      requestId,
+      remoteId,
+      "approve",
+      sessionApprovalSubmittingDecision,
+    ),
+    createApprovalDecisionButton(
+      "Reject",
+      "Rejecting",
+      requestId,
+      remoteId,
+      "reject",
+      sessionApprovalSubmittingDecision,
+    ),
+  );
+
+  const locateButton = document.createElement("button");
+  locateButton.type = "button";
+  locateButton.className = "action-button approval-link-button";
+  locateButton.dataset.openApproval = "true";
+  locateButton.dataset.requestId = requestId;
+  locateButton.dataset.remoteId = remoteId;
+  locateButton.disabled = requestId === "";
+  locateButton.textContent = "Locate In Approvals";
+  actions.append(locateButton);
+
+  section.append(actions);
+  return section;
+}
+
+function createReplyComposer(
+  sessionId,
+  remoteId,
+  {
+    sessionReplyDraft = "",
+    sessionReplySubmitting = false,
+    sessionReplyError = "",
+    sessionReplyProgress = null,
+    replyBlockedReason = "",
+  } = {},
+) {
+  const progress = sessionReplyProgress && typeof sessionReplyProgress === "object"
+    ? sessionReplyProgress
+    : {};
+  const progressPhase = readField(progress, "phase", "");
+  const completedAt = readField(progress, "completedAt", "");
+  const turnStatus = readField(progress, "turnStatus", "");
+  const replySection = document.createElement("section");
+  replySection.className = "detail-section";
+  replySection.append(createSectionTitle("Reply"));
+
+  const form = document.createElement("form");
+  form.className = "reply-form";
+  form.dataset.sessionReplyForm = "true";
+  form.dataset.sessionId = sessionId;
+  form.dataset.remoteId = remoteId;
+
+  const inputLabel = document.createElement("label");
+  inputLabel.className = "detail-key";
+  inputLabel.textContent = "Reply Message";
+
+  const textarea = document.createElement("textarea");
+  textarea.className = "reply-input";
+  textarea.rows = 4;
+  textarea.placeholder = "Forward a reply to this hosted session through relay.";
+  textarea.value = sessionReplyDraft;
+  textarea.disabled = sessionReplySubmitting || replyBlockedReason !== "";
+  textarea.dataset.sessionReplyInput = "true";
+  textarea.dataset.sessionId = sessionId;
+  textarea.dataset.remoteId = remoteId;
+
+  const actions = document.createElement("div");
+  actions.className = "reply-actions";
+
+  const button = document.createElement("button");
+  button.type = "submit";
+  button.className = "action-button reply-submit-button";
+  button.disabled =
+    sessionReplySubmitting ||
+    sessionReplyDraft.trim() === "" ||
+    replyBlockedReason !== "";
+  button.textContent = sessionReplySubmitting
+    ? progressPhase === "running"
+      ? "Running..."
+      : "Sending..."
+    : "Submit Reply";
+  actions.append(button);
+
+  form.append(inputLabel, textarea, actions);
+  replySection.append(form);
+
+  if (sessionReplyError) {
+    const errorMessage = document.createElement("p");
+    errorMessage.className = "reply-status is-error";
+    errorMessage.textContent = sessionReplyError;
+    replySection.append(errorMessage);
+  } else if (progressPhase === "sending") {
+    const sendingMessage = document.createElement("p");
+    sendingMessage.className = "reply-status is-running";
+    sendingMessage.textContent = "Sending reply through relay...";
+    replySection.append(sendingMessage);
+  } else if (progressPhase === "running") {
+    const runningMessage = document.createElement("p");
+    runningMessage.className = "reply-status is-running";
+    runningMessage.textContent =
+      "Reply sent. Waiting for the hosted session result to refresh...";
+    replySection.append(runningMessage);
+  } else if (progressPhase === "approval_pending") {
+    const pausedMessage = document.createElement("p");
+    pausedMessage.className = "reply-status is-running";
+    pausedMessage.textContent =
+      "Reply is paused for approval. Resolve the approval below to continue this turn.";
+    replySection.append(pausedMessage);
+  } else if (progressPhase === "completed" && sessionReplyDraft.trim() === "") {
+    const successMessage = document.createElement("p");
+    successMessage.className = "reply-status is-success";
+    successMessage.textContent =
+      `Completed at ${formatDateTime(completedAt)}${turnStatus ? ` (${turnStatus})` : ""}.`;
+    replySection.append(successMessage);
+  } else if (progressPhase === "failed") {
+    const failedMessage = document.createElement("p");
+    failedMessage.className = "reply-status is-error";
+    failedMessage.textContent =
+      `Hosted session failed${turnStatus ? ` (${turnStatus})` : ""}.`;
+    replySection.append(failedMessage);
+  }
+
+  if (replyBlockedReason) {
+    const blockedMessage = document.createElement("p");
+    blockedMessage.className = "reply-status";
+    blockedMessage.textContent = replyBlockedReason;
+    replySection.append(blockedMessage);
+  }
+
+  const helperText = document.createElement("p");
+  helperText.className = "reply-status";
+  helperText.textContent =
+    "P7-D keeps reply and approval continuation in the same control surface.";
+  replySection.append(helperText);
+
+  return replySection;
+}
+
 export function renderSessionDetail(
   container,
   {
@@ -163,6 +390,12 @@ export function renderSessionDetail(
     sessionDetail = null,
     sessionDetailLoading = false,
     sessionDetailError = null,
+    sessionReplyDraft = "",
+    sessionReplySubmitting = false,
+    sessionReplyError = "",
+    sessionReplyProgress = null,
+    sessionApproval = null,
+    sessionApprovalSubmittingDecision = "",
   } = {},
 ) {
   container.replaceChildren();
@@ -194,6 +427,8 @@ export function renderSessionDetail(
   const approvalRequest = hasObjectData(readObject(lastTurn, "approval_request"))
     ? readObject(lastTurn, "approval_request")
     : readObject(providerObservation, "approval_request");
+  const pendingRequestId = readField(hostedSession, "pending_request_id", "");
+  const hostedState = readField(hostedSession, "state", "");
   const replyText = extractReplyText(promptResult);
   const sessionId = readField(
     relaySession,
@@ -229,10 +464,19 @@ export function renderSessionDetail(
     createMetaPill(`remote: ${remoteId || "-"}`),
     createMetaPill(`provider: ${provider || "-"}`),
     createMetaPill(`relay_status: ${readField(relaySession, "status", "-")}`),
-    createMetaPill(`hosted_state: ${readField(hostedSession, "state", "-")}`),
+    createMetaPill(`hosted_state: ${hostedState || "-"}`),
   );
   if (sessionDetailLoading) {
     meta.append(createMetaPill("loading detail"));
+  }
+  if (
+    sessionReplyProgress &&
+    typeof sessionReplyProgress === "object" &&
+    readField(sessionReplyProgress, "phase", "")
+  ) {
+    meta.append(
+      createMetaPill(`reply: ${readField(sessionReplyProgress, "phase", "-")}`),
+    );
   }
 
   const titleLine = document.createElement("p");
@@ -330,4 +574,37 @@ export function renderSessionDetail(
 
   transcriptSection.append(transcript);
   container.append(transcriptSection);
+
+  if (
+    hostedState === "approval_pending" ||
+    pendingRequestId !== "" ||
+    hasObjectData(approvalRequest) ||
+    (sessionApproval && typeof sessionApproval === "object")
+  ) {
+    container.append(
+      createApprovalContextSection(sessionId, remoteId === "-" ? "" : remoteId, {
+        hostedState,
+        pendingRequestId,
+        approvalRequest,
+        sessionApproval,
+        sessionApprovalSubmittingDecision,
+      }),
+    );
+  }
+
+  if (sessionId && sessionId !== "-") {
+    container.append(
+      createReplyComposer(sessionId, remoteId === "-" ? "" : remoteId, {
+        sessionReplyDraft,
+        sessionReplySubmitting,
+        sessionReplyError,
+        sessionReplyProgress,
+        replyBlockedReason: hostedState === "approval_pending"
+          ? "Current turn is waiting for approval. Resolve the approval before sending another reply."
+          : hostedState === "running"
+            ? "Current turn is still running. Wait for this result to finish before sending another reply."
+            : "",
+      }),
+    );
+  }
 }

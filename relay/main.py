@@ -25,6 +25,7 @@ from relay.event_log import get_next_event_seq
 from relay.remote_agent_client import RemoteAgentHttpError
 from relay.remote_agent_client import get_session_detail as get_remote_agent_session_detail
 from relay.remote_agent_client import post_approval_response as post_remote_agent_approval
+from relay.remote_agent_client import post_session_reply as post_remote_agent_reply
 from relay.server_registry import enrich_approval
 from relay.server_registry import enrich_session
 from relay.server_registry import list_servers
@@ -54,6 +55,11 @@ class ApprovalResponseRequest(BaseModel):
     remote_id: str = ""
     decision: Literal["approve", "reject"]
     feedback: str = ""
+
+
+class SessionReplyRequest(BaseModel):
+    remote_id: str = ""
+    message: str
 
 
 class KimiApprovalRequestEvent(BaseModel):
@@ -173,6 +179,106 @@ def get_hosted_session_detail(
             "http_status": detail_result["http_status"],
         },
         "fetched_at": _utc_now(),
+    }
+
+
+@app.post("/v1/sessions/{session_id}/reply")
+def post_hosted_session_reply(
+    session_id: str,
+    payload: SessionReplyRequest,
+) -> dict[str, object]:
+    reply_message = payload.message.strip()
+    if not reply_message:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "reply message is required",
+                "session_id": session_id,
+            },
+        )
+
+    target_remote_id = payload.remote_id.strip() or None
+    try:
+        session = get_session(session_id, remote_id=target_remote_id)
+    except LookupError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": "session_id is ambiguous across multiple remotes; provide remote_id",
+                "session_id": session_id,
+            },
+        ) from exc
+    if session is None:
+        raise HTTPException(status_code=404, detail="session not found")
+
+    normalized_remote_id = str(session.get("remote_id") or session.get("remote") or "")
+
+    try:
+        reply_result = post_remote_agent_reply(
+            session=session,
+            message=reply_message,
+        )
+    except TimeoutError as exc:
+        raise HTTPException(
+            status_code=504,
+            detail={
+                "message": "remote-agent session reply request timed out",
+                "session_id": session_id,
+                "remote_id": normalized_remote_id,
+                "reason": str(exc),
+            },
+        ) from exc
+    except RemoteAgentHttpError as exc:
+        if exc.http_status == 404:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "message": "hosted session not found on remote-agent",
+                    "session_id": session_id,
+                    "remote_id": normalized_remote_id,
+                    "remote_http_status": exc.http_status,
+                },
+            ) from exc
+        if 400 <= exc.http_status < 500:
+            raise HTTPException(
+                status_code=exc.http_status,
+                detail={
+                    "message": "remote-agent session reply rejected",
+                    "session_id": session_id,
+                    "remote_id": normalized_remote_id,
+                    "remote_http_status": exc.http_status,
+                    "reason": exc.detail,
+                },
+            ) from exc
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "remote-agent session reply request failed",
+                "session_id": session_id,
+                "remote_id": normalized_remote_id,
+                "remote_http_status": exc.http_status,
+                "reason": exc.detail,
+            },
+        ) from exc
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "remote-agent session reply request failed",
+                "session_id": session_id,
+                "remote_id": normalized_remote_id,
+                "reason": str(exc),
+            },
+        ) from exc
+
+    return {
+        "session": enrich_session(public_session(session)),
+        "reply": reply_result["result"],
+        "proxy": {
+            "remote_id": normalized_remote_id,
+            "http_status": reply_result["http_status"],
+        },
+        "relayed_at": _utc_now(),
     }
 
 

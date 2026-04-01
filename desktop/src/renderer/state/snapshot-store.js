@@ -28,6 +28,14 @@ function buildSessionKey(sessionId, remoteId = "") {
   return `${String(remoteId || "").trim()}::${String(sessionId || "").trim()}`;
 }
 
+function clearRecordKey(record, recordKey) {
+  const nextRecord = {
+    ...record,
+  };
+  delete nextRecord[recordKey];
+  return nextRecord;
+}
+
 function readRecordField(record, fieldName, fallback = "") {
   if (!record || typeof record !== "object") {
     return fallback;
@@ -67,25 +75,171 @@ function normalizeSessionIdentity(sessionId, remoteId = "") {
   };
 }
 
-function normalizeSessionDetail(detail) {
-  if (!detail || typeof detail !== "object") {
+function normalizeSessionInteractionDetail(payload) {
+  if (!payload || typeof payload !== "object") {
     return null;
   }
 
   return {
-    session: detail.session && typeof detail.session === "object"
-      ? detail.session
+    session: payload.session && typeof payload.session === "object"
+      ? payload.session
       : {},
-    detail: detail.detail && typeof detail.detail === "object"
-      ? detail.detail
+    detail: payload.detail && typeof payload.detail === "object"
+      ? payload.detail
+      : payload.reply && typeof payload.reply === "object"
+        ? payload.reply
+        : {},
+    proxy: payload.proxy && typeof payload.proxy === "object"
+      ? payload.proxy
       : {},
-    proxy: detail.proxy && typeof detail.proxy === "object"
-      ? detail.proxy
-      : {},
-    fetchedAt: typeof detail.fetched_at === "string"
-      ? detail.fetched_at
-      : "",
+    fetchedAt: typeof payload.fetched_at === "string"
+      ? payload.fetched_at
+      : typeof payload.relayed_at === "string"
+        ? payload.relayed_at
+        : "",
   };
+}
+
+function readHostedSessionFromDetail(sessionDetail) {
+  if (!sessionDetail || typeof sessionDetail !== "object") {
+    return {};
+  }
+
+  const detailPayload = sessionDetail.detail;
+  if (!detailPayload || typeof detailPayload !== "object") {
+    return {};
+  }
+
+  const hostedSession = detailPayload.session;
+  return hostedSession && typeof hostedSession === "object"
+    ? hostedSession
+    : {};
+}
+
+function readLastTurnFromDetail(sessionDetail) {
+  const hostedSession = readHostedSessionFromDetail(sessionDetail);
+  const lastTurn = hostedSession.last_turn;
+  return lastTurn && typeof lastTurn === "object"
+    ? lastTurn
+    : {};
+}
+
+function inferReplyPhase(sessionDetail, expectedMessage) {
+  const normalizedExpectedMessage = String(expectedMessage || "").trim();
+  if (normalizedExpectedMessage === "") {
+    return "";
+  }
+
+  const hostedSession = readHostedSessionFromDetail(sessionDetail);
+  const lastTurn = readLastTurnFromDetail(sessionDetail);
+  const lastTurnMessage = readRecordField(lastTurn, "message", "");
+  if (lastTurnMessage !== normalizedExpectedMessage) {
+    return "";
+  }
+
+  const hostedState = readRecordField(hostedSession, "state", "");
+  const lastTurnStatus = readRecordField(lastTurn, "status", "");
+  if (hostedState === "approval_pending" || lastTurnStatus === "approval_pending") {
+    return "approval_pending";
+  }
+  if (hostedState === "running" || lastTurnStatus === "running") {
+    return "running";
+  }
+  if (
+    lastTurnStatus !== "" ||
+    readRecordField(lastTurn, "completed_at", "") !== ""
+  ) {
+    return "completed";
+  }
+
+  return "";
+}
+
+function readReplyTurnStatus(sessionDetail) {
+  const lastTurn = readLastTurnFromDetail(sessionDetail);
+  return readRecordField(lastTurn, "status", "");
+}
+
+function readReplyCompletedAt(sessionDetail) {
+  const lastTurn = readLastTurnFromDetail(sessionDetail);
+  const completedAt = readRecordField(lastTurn, "completed_at", "");
+  if (completedAt !== "") {
+    return completedAt;
+  }
+
+  const hostedSession = readHostedSessionFromDetail(sessionDetail);
+  return readRecordField(hostedSession, "updated_at", "");
+}
+
+function readHostedSessionState(sessionDetail) {
+  const hostedSession = readHostedSessionFromDetail(sessionDetail);
+  return readRecordField(hostedSession, "state", "");
+}
+
+function readPendingRequestId(sessionDetail) {
+  const hostedSession = readHostedSessionFromDetail(sessionDetail);
+  return readRecordField(hostedSession, "pending_request_id", "");
+}
+
+function findApprovalRecord(approvals, requestId, remoteId = "") {
+  const normalizedRequestId = String(requestId || "").trim();
+  const normalizedRemoteId = String(remoteId || "").trim();
+  if (normalizedRequestId === "") {
+    return null;
+  }
+
+  for (const approval of approvals) {
+    if (!approval || typeof approval !== "object") {
+      continue;
+    }
+
+    const approvalRequestId = readRecordField(approval, "request_id", "");
+    const approvalRemoteId = readRecordField(
+      approval,
+      "remote_id",
+      readRecordField(approval, "remote", ""),
+    );
+    if (
+      approvalRequestId === normalizedRequestId &&
+      approvalRemoteId === normalizedRemoteId
+    ) {
+      return approval;
+    }
+  }
+
+  return null;
+}
+
+function resolveSessionIdentityForApproval(approval, fallbackSession = null) {
+  if (approval && typeof approval === "object") {
+    const sessionId = readRecordField(approval, "session_id", "");
+    const remoteId = readRecordField(
+      approval,
+      "remote_id",
+      readRecordField(approval, "remote", ""),
+    );
+    if (sessionId !== "") {
+      return {
+        sessionId,
+        remoteId,
+      };
+    }
+  }
+
+  if (fallbackSession && typeof fallbackSession === "object") {
+    return normalizeSessionIdentity(
+      fallbackSession.sessionId,
+      fallbackSession.remoteId,
+    );
+  }
+
+  return null;
+}
+
+function delay(ms) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
 }
 
 function getConnectionStatusForRefreshError(error) {
@@ -122,6 +276,10 @@ export function createSnapshotStore() {
     sessionDetail: null,
     sessionDetailLoading: false,
     sessionDetailError: null,
+    sessionReplyDraftByKey: {},
+    sessionReplySubmittingKey: "",
+    sessionReplyErrorByKey: {},
+    sessionReplyProgressByKey: {},
   };
 
   function emit() {
@@ -139,11 +297,7 @@ export function createSnapshotStore() {
   }
 
   function clearApprovalAction(approvalKey) {
-    const nextActions = {
-      ...state.approvalActionByKey,
-    };
-    delete nextActions[approvalKey];
-    return nextActions;
+    return clearRecordKey(state.approvalActionByKey, approvalKey);
   }
 
   function clearSelectedSession() {
@@ -156,11 +310,107 @@ export function createSnapshotStore() {
     });
   }
 
+  function setSessionReplyProgress(sessionKey, progressPatch) {
+    const currentProgress = state.sessionReplyProgressByKey[sessionKey] || {};
+    setState({
+      sessionReplyProgressByKey: {
+        ...state.sessionReplyProgressByKey,
+        [sessionKey]: {
+          ...currentProgress,
+          ...progressPatch,
+        },
+      },
+    });
+  }
+
+  async function continueSessionAfterApproval({
+    requestId,
+    sessionIdentity,
+  }) {
+    if (!sessionIdentity) {
+      return null;
+    }
+
+    const normalizedSession = normalizeSessionIdentity(
+      sessionIdentity.sessionId,
+      sessionIdentity.remoteId,
+    );
+    const sessionKey = buildSessionKey(
+      normalizedSession.sessionId,
+      normalizedSession.remoteId,
+    );
+    const normalizedRequestId = String(requestId || "").trim();
+    const deadline = Date.now() + 95000;
+
+    for (;;) {
+      await delay(350);
+
+      const detailPayload = await refreshSessionDetail(normalizedSession, {
+        preserveData: true,
+        surfaceError: false,
+        markLoading: false,
+      });
+      const observedDetail = detailPayload
+        ? normalizeSessionInteractionDetail(detailPayload.detail)
+        : state.selectedSessionKey === sessionKey
+          ? state.sessionDetail
+          : null;
+      const hostedState = readHostedSessionState(observedDetail);
+      const pendingRequestId = readPendingRequestId(observedDetail);
+      const completedAt = readReplyCompletedAt(observedDetail);
+      const turnStatus = readReplyTurnStatus(observedDetail);
+
+      if (
+        hostedState === "approval_pending" ||
+        pendingRequestId === normalizedRequestId
+      ) {
+        setSessionReplyProgress(sessionKey, {
+          phase: "approval_pending",
+          requestId: normalizedRequestId,
+        });
+        continue;
+      }
+
+      if (hostedState === "running") {
+        setSessionReplyProgress(sessionKey, {
+          phase: "running",
+          requestId: normalizedRequestId,
+        });
+        continue;
+      }
+
+      if (hostedState === "failed") {
+        setSessionReplyProgress(sessionKey, {
+          phase: "failed",
+          requestId: normalizedRequestId,
+          completedAt: completedAt || "",
+          turnStatus,
+        });
+        return observedDetail;
+      }
+
+      if (completedAt !== "" || hostedState === "idle" || hostedState === "finished") {
+        setSessionReplyProgress(sessionKey, {
+          phase: "completed",
+          requestId: normalizedRequestId,
+          completedAt: completedAt || "",
+          turnStatus,
+        });
+        return observedDetail;
+      }
+
+      if (Date.now() >= deadline) {
+        return observedDetail;
+      }
+    }
+  }
+
   async function refreshSessionDetail(
     sessionIdentity = state.selectedSession,
     {
       preserveData = true,
       surfaceError = true,
+      markLoading = true,
     } = {},
   ) {
     if (!sessionIdentity) {
@@ -189,7 +439,7 @@ export function createSnapshotStore() {
       sessionDetail: preserveData && state.selectedSessionKey === sessionKey
         ? state.sessionDetail
         : null,
-      sessionDetailLoading: true,
+      sessionDetailLoading: markLoading,
       sessionDetailError: null,
     });
 
@@ -209,7 +459,7 @@ export function createSnapshotStore() {
 
         setState({
           relayBaseUrl: payload.relayBaseUrl || state.relayBaseUrl,
-          sessionDetail: normalizeSessionDetail(payload.detail),
+          sessionDetail: normalizeSessionInteractionDetail(payload.detail),
           sessionDetailLoading: false,
           sessionDetailError: null,
         });
@@ -332,6 +582,18 @@ export function createSnapshotStore() {
       ? nextRemoteId.trim()
       : "";
     const approvalKey = buildApprovalActionKey(requestId, normalizedRemoteId);
+    const matchedApproval = findApprovalRecord(
+      state.snapshot.approvals,
+      requestId,
+      normalizedRemoteId,
+    );
+    const targetSession = resolveSessionIdentityForApproval(
+      matchedApproval,
+      state.selectedSession,
+    );
+    const targetSessionKey = targetSession
+      ? buildSessionKey(targetSession.sessionId, targetSession.remoteId)
+      : "";
 
     if (state.approvalActionByKey[approvalKey]) {
       return null;
@@ -357,11 +619,182 @@ export function createSnapshotStore() {
         error: null,
       });
       await refresh();
+      if (targetSession) {
+        setSessionReplyProgress(targetSessionKey, {
+          phase: "running",
+          requestId,
+        });
+        await continueSessionAfterApproval({
+          requestId,
+          sessionIdentity: targetSession,
+        });
+        void refresh().catch(() => {});
+      }
       return payload;
     } catch (error) {
       setState({
         approvalActionByKey: clearApprovalAction(approvalKey),
         error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  }
+
+  function setSessionReplyDraft(sessionId, remoteId = "", message = "") {
+    const normalizedSession = normalizeSessionIdentity(sessionId, remoteId);
+    const sessionKey = buildSessionKey(
+      normalizedSession.sessionId,
+      normalizedSession.remoteId,
+    );
+
+    setState({
+      sessionReplyDraftByKey: {
+        ...state.sessionReplyDraftByKey,
+        [sessionKey]: typeof message === "string" ? message : "",
+      },
+      sessionReplyErrorByKey: clearRecordKey(state.sessionReplyErrorByKey, sessionKey),
+    });
+  }
+
+  async function submitSessionReply(sessionId, remoteId = "", message) {
+    const normalizedSession = normalizeSessionIdentity(sessionId, remoteId);
+    const sessionKey = buildSessionKey(
+      normalizedSession.sessionId,
+      normalizedSession.remoteId,
+    );
+    const draftMessage = typeof message === "string"
+      ? message
+      : state.sessionReplyDraftByKey[sessionKey] || "";
+    const normalizedMessage = draftMessage.trim();
+
+    if (normalizedMessage === "") {
+      throw new Error("reply message is required");
+    }
+
+    if (state.sessionReplySubmittingKey === sessionKey) {
+      return null;
+    }
+
+    const startedAt = new Date().toISOString();
+    setState({
+      sessionReplySubmittingKey: sessionKey,
+      sessionReplyErrorByKey: clearRecordKey(state.sessionReplyErrorByKey, sessionKey),
+      sessionReplyProgressByKey: {
+        ...state.sessionReplyProgressByKey,
+        [sessionKey]: {
+          message: normalizedMessage,
+          phase: "sending",
+          startedAt,
+          completedAt: "",
+          turnStatus: "",
+        },
+      },
+    });
+
+    try {
+      const progressObserver = (async () => {
+        while (state.sessionReplySubmittingKey === sessionKey) {
+          await delay(350);
+          if (state.sessionReplySubmittingKey !== sessionKey) {
+            return;
+          }
+
+          const detailPayload = await refreshSessionDetail(normalizedSession, {
+            preserveData: true,
+            surfaceError: false,
+            markLoading: false,
+          });
+          const observedDetail = detailPayload
+            ? normalizeSessionInteractionDetail(detailPayload.detail)
+            : state.selectedSessionKey === sessionKey
+              ? state.sessionDetail
+              : null;
+          const observedPhase = inferReplyPhase(observedDetail, normalizedMessage);
+
+          if (observedPhase === "approval_pending") {
+            setSessionReplyProgress(sessionKey, {
+              phase: "approval_pending",
+              requestId: readPendingRequestId(observedDetail) || "",
+            });
+            continue;
+          }
+
+          if (observedPhase === "running") {
+            setSessionReplyProgress(sessionKey, {
+              phase: "running",
+            });
+            continue;
+          }
+
+          if (observedPhase === "completed") {
+            setSessionReplyProgress(sessionKey, {
+              phase: "completed",
+              completedAt: readReplyCompletedAt(observedDetail) || "",
+              turnStatus: readReplyTurnStatus(observedDetail) || "",
+            });
+          }
+        }
+      })().catch(() => {});
+
+      const payload = await window.desktopApi.submitSessionReply({
+        sessionId: normalizedSession.sessionId,
+        remoteId: normalizedSession.remoteId,
+        message: normalizedMessage,
+      });
+      const replyDetail = normalizeSessionInteractionDetail(payload.reply);
+      const completedAt = payload.respondedAt ||
+        readReplyCompletedAt(replyDetail) ||
+        startedAt;
+      const replyPhase = inferReplyPhase(replyDetail, normalizedMessage);
+      const pendingRequestId = readPendingRequestId(replyDetail);
+
+      setState({
+        relayBaseUrl: payload.relayBaseUrl || state.relayBaseUrl,
+        ...(state.selectedSessionKey === sessionKey
+          ? {
+            sessionDetail: replyDetail,
+            sessionDetailLoading: false,
+            sessionDetailError: null,
+          }
+          : {}),
+        sessionReplyDraftByKey: {
+          ...state.sessionReplyDraftByKey,
+          [sessionKey]: "",
+        },
+        sessionReplySubmittingKey: "",
+        sessionReplyErrorByKey: clearRecordKey(state.sessionReplyErrorByKey, sessionKey),
+        sessionReplyProgressByKey: {
+          ...state.sessionReplyProgressByKey,
+          [sessionKey]: {
+            message: normalizedMessage,
+            phase: replyPhase === "approval_pending" ? "approval_pending" : "completed",
+            startedAt,
+            completedAt: replyPhase === "approval_pending" ? "" : completedAt,
+            turnStatus: readReplyTurnStatus(replyDetail) || "",
+            requestId: pendingRequestId,
+          },
+        },
+      });
+      await progressObserver;
+      if (replyPhase === "approval_pending" && pendingRequestId !== "") {
+        await refresh();
+      } else {
+        await refreshSessionDetail(normalizedSession, {
+          preserveData: true,
+          surfaceError: false,
+          markLoading: false,
+        });
+      }
+      void refresh().catch(() => {});
+      return payload;
+    } catch (error) {
+      setState({
+        sessionReplySubmittingKey: "",
+        sessionReplyErrorByKey: {
+          ...state.sessionReplyErrorByKey,
+          [sessionKey]: error instanceof Error ? error.message : String(error),
+        },
+        sessionReplyProgressByKey: clearRecordKey(state.sessionReplyProgressByKey, sessionKey),
       });
       throw error;
     }
@@ -390,6 +823,8 @@ export function createSnapshotStore() {
     refresh,
     selectSession,
     clearSelectedSession,
+    setSessionReplyDraft,
+    submitSessionReply,
     submitApprovalDecision,
   };
 }

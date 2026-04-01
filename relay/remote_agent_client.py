@@ -75,6 +75,29 @@ def get_session_detail(
     }
 
 
+def post_session_reply(
+    *,
+    session: Mapping[str, object],
+    message: str,
+    timeout_seconds: float = 95.0,
+) -> dict[str, object]:
+    response = _request_remote_agent_json(
+        session=session,
+        path=f"/v1/sessions/{session['id']}/reply",
+        method="POST",
+        payload={
+            "message": message,
+        },
+        timeout_seconds=timeout_seconds,
+    )
+    return {
+        "status": "written",
+        "base_url": response["base_url"],
+        "http_status": response["http_status"],
+        "result": response["result"],
+    }
+
+
 def _request_remote_agent_json(
     *,
     session: Mapping[str, object],

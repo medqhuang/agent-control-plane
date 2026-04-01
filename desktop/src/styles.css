@@ -453,6 +453,71 @@ h2 {
   color: #991b1b;
 }
 
+.approval-link-button {
+  border-color: #cbd5e1;
+  background: #ffffff;
+  color: #374151;
+}
+
+.approval-context-section {
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 12px;
+  background: #eff6ff;
+}
+
+.reply-form {
+  display: grid;
+  gap: 12px;
+}
+
+.reply-input {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 12px;
+  background: #ffffff;
+  color: #111827;
+}
+
+.reply-input:disabled {
+  background: #f8fafc;
+  color: #6b7280;
+  cursor: wait;
+}
+
+.reply-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.reply-submit-button {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.reply-status {
+  margin: 0;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.reply-status.is-error {
+  color: #b91c1c;
+}
+
+.reply-status.is-running {
+  color: #1d4ed8;
+}
+
+.reply-status.is-success {
+  color: #166534;
+}
+
 @media (max-width: 900px) {
   .topbar,
   .panel-header {

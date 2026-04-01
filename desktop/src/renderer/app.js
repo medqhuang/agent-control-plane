@@ -52,6 +52,74 @@ function buildSessionKey(session) {
   )}::${readRecordField(session, "id", "")}`;
 }
 
+function buildApprovalActionKey(requestId, remoteId = "") {
+  return `${String(remoteId || "").trim()}::${String(requestId || "").trim()}`;
+}
+
+function findSelectedSessionApproval(selectedSession, sessionDetail, approvals) {
+  if (!selectedSession) {
+    return null;
+  }
+
+  const detailPayload = sessionDetail && typeof sessionDetail === "object"
+    ? sessionDetail.detail
+    : null;
+  const hostedSession = detailPayload && typeof detailPayload === "object"
+    ? detailPayload.session
+    : null;
+  const lastTurn = hostedSession && typeof hostedSession === "object"
+    ? hostedSession.last_turn
+    : null;
+  const lastTurnApproval = lastTurn && typeof lastTurn === "object"
+    ? lastTurn.approval_request
+    : null;
+  const providerObservation = detailPayload && typeof detailPayload === "object"
+    ? detailPayload.provider_observation
+    : null;
+  const observedApproval = lastTurnApproval && typeof lastTurnApproval === "object"
+    ? lastTurnApproval
+    : providerObservation && typeof providerObservation === "object"
+      ? providerObservation.approval_request
+      : null;
+
+  const sessionId = readRecordField(selectedSession, "id", "");
+  const remoteId = readRecordField(
+    selectedSession,
+    "remote_id",
+    readRecordField(selectedSession, "remote", ""),
+  );
+  const pendingRequestId = hostedSession && typeof hostedSession === "object"
+    ? readRecordField(hostedSession, "pending_request_id", "")
+    : "";
+  const observedRequestId = observedApproval && typeof observedApproval === "object"
+    ? readRecordField(observedApproval, "request_id", "")
+    : "";
+
+  for (const approval of approvals) {
+    const approvalSessionId = readRecordField(approval, "session_id", "");
+    const approvalRemoteId = readRecordField(
+      approval,
+      "remote_id",
+      readRecordField(approval, "remote", ""),
+    );
+    const approvalRequestId = readRecordField(approval, "request_id", "");
+
+    if (approvalSessionId === sessionId && approvalRemoteId === remoteId) {
+      return approval;
+    }
+
+    if (
+      approvalRemoteId === remoteId &&
+      approvalRequestId !== "" &&
+      (approvalRequestId === pendingRequestId || approvalRequestId === observedRequestId)
+    ) {
+      return approval;
+    }
+  }
+
+  return null;
+}
+
 function formatLastUpdated(value) {
   if (!value) {
     return "Never";
@@ -74,9 +142,37 @@ function renderApp(state) {
   );
   const hasApprovalAction =
     Object.keys(state.approvalActionByKey).length > 0;
+  const hasSessionReplyAction = state.sessionReplySubmittingKey !== "";
   const selectedSession = sessions.find((session) =>
     buildSessionKey(session) === state.selectedSessionKey
   ) || null;
+  const selectedSessionReplyDraft = state.selectedSessionKey
+    ? state.sessionReplyDraftByKey[state.selectedSessionKey] || ""
+    : "";
+  const selectedSessionReplyError = state.selectedSessionKey
+    ? state.sessionReplyErrorByKey[state.selectedSessionKey] || ""
+    : "";
+  const selectedSessionReplyProgress = state.selectedSessionKey
+    ? state.sessionReplyProgressByKey[state.selectedSessionKey] || null
+    : null;
+  const selectedSessionApproval = findSelectedSessionApproval(
+    selectedSession,
+    state.sessionDetail,
+    pendingApprovals,
+  );
+  const selectedSessionApprovalKey = selectedSessionApproval
+    ? buildApprovalActionKey(
+      readRecordField(selectedSessionApproval, "request_id", ""),
+      readRecordField(
+        selectedSessionApproval,
+        "remote_id",
+        readRecordField(selectedSessionApproval, "remote", ""),
+      ),
+    )
+    : "";
+  const selectedSessionApprovalSubmittingDecision = selectedSessionApprovalKey
+    ? state.approvalActionByKey[selectedSessionApprovalKey] || ""
+    : "";
 
   elements.relayEndpoint.textContent = state.relayBaseUrl || "-";
   elements.lastUpdated.textContent = formatLastUpdated(state.lastUpdated);
@@ -84,7 +180,7 @@ function renderApp(state) {
   elements.sessionCount.textContent = String(sessions.length);
   elements.approvalCount.textContent = String(pendingApprovals.length);
   elements.refreshButton.disabled =
-    state.status === "loading" || hasApprovalAction;
+    state.status === "loading" || hasApprovalAction || hasSessionReplyAction;
 
   updateStatusBadge(state.status);
   renderRemoteList(elements.serverList, servers, {
@@ -99,9 +195,17 @@ function renderApp(state) {
     sessionDetail: state.sessionDetail,
     sessionDetailLoading: state.sessionDetailLoading,
     sessionDetailError: state.sessionDetailError,
+    sessionReplyDraft: selectedSessionReplyDraft,
+    sessionReplySubmitting:
+      state.sessionReplySubmittingKey === state.selectedSessionKey,
+    sessionReplyError: selectedSessionReplyError,
+    sessionReplyProgress: selectedSessionReplyProgress,
+    sessionApproval: selectedSessionApproval,
+    sessionApprovalSubmittingDecision: selectedSessionApprovalSubmittingDecision,
   });
   renderApprovalList(elements.approvalList, pendingApprovals, {
     approvalActionByKey: state.approvalActionByKey,
+    contextApprovalKey: selectedSessionApprovalKey,
   });
 
   if (state.error) {
@@ -119,6 +223,14 @@ elements.refreshButton.addEventListener("click", () => {
 });
 
 elements.sessionList.addEventListener("click", async (event) => {
+  const currentState = store.getState();
+  if (
+    currentState.sessionReplySubmittingKey !== "" ||
+    Object.keys(currentState.approvalActionByKey).length > 0
+  ) {
+    return;
+  }
+
   const button = event.target.closest("[data-session-id]");
   if (!button) {
     return;
@@ -158,6 +270,101 @@ elements.approvalList.addEventListener("click", async (event) => {
     await store.submitApprovalDecision(requestId, remoteId, approvalDecision);
   } catch {
     // Store state already carries the error message for the UI.
+  }
+});
+
+elements.sessionDetail.addEventListener("input", (event) => {
+  if (!(event.target instanceof HTMLTextAreaElement)) {
+    return;
+  }
+
+  if (!event.target.matches("[data-session-reply-input]")) {
+    return;
+  }
+
+  const {
+    sessionId,
+    remoteId = "",
+  } = event.target.dataset;
+  if (!sessionId) {
+    return;
+  }
+
+  store.setSessionReplyDraft(sessionId, remoteId, event.target.value);
+});
+
+elements.sessionDetail.addEventListener("submit", async (event) => {
+  const form = event.target.closest("[data-session-reply-form]");
+  if (!form) {
+    return;
+  }
+
+  event.preventDefault();
+
+  const {
+    sessionId,
+    remoteId = "",
+  } = form.dataset;
+  if (!sessionId) {
+    return;
+  }
+
+  try {
+    await store.submitSessionReply(sessionId, remoteId);
+  } catch {
+    // Store state already carries the reply submission error for the UI.
+  }
+});
+
+elements.sessionDetail.addEventListener("click", async (event) => {
+  const decisionButton = event.target.closest("[data-approval-decision]");
+  if (decisionButton) {
+    const {
+      approvalDecision,
+      requestId,
+      remoteId = "",
+    } = decisionButton.dataset;
+    if (!requestId || !approvalDecision) {
+      return;
+    }
+
+    try {
+      await store.submitApprovalDecision(requestId, remoteId, approvalDecision);
+    } catch {
+      // Store state already carries the error message for the UI.
+    }
+    return;
+  }
+
+  const locateButton = event.target.closest("[data-open-approval]");
+  if (!locateButton) {
+    return;
+  }
+
+  const {
+    requestId,
+    remoteId = "",
+  } = locateButton.dataset;
+  if (!requestId) {
+    return;
+  }
+
+  const approvalKey = buildApprovalActionKey(requestId, remoteId);
+  const approvalItems = elements.approvalList.querySelectorAll("[data-approval-key]");
+  const matchedItem = [...approvalItems].find((item) =>
+    item.dataset.approvalKey === approvalKey
+  );
+  if (!matchedItem) {
+    return;
+  }
+
+  matchedItem.scrollIntoView({
+    block: "center",
+    behavior: "smooth",
+  });
+  const primaryAction = matchedItem.querySelector("[data-approval-decision]");
+  if (primaryAction instanceof HTMLElement) {
+    primaryAction.focus();
   }
 });
 

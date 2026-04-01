@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld("desktopApi", {
   getSnapshot: () => ipcRenderer.invoke("relay:getSnapshot"),
   getSessionDetail: (payload) =>
     ipcRenderer.invoke("relay:getSessionDetail", payload),
+  submitSessionReply: (payload) =>
+    ipcRenderer.invoke("relay:submitSessionReply", payload),
   submitApprovalDecision: (payload) =>
     ipcRenderer.invoke("relay:submitApprovalDecision", payload),
 });

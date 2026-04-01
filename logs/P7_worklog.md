@@ -2,27 +2,29 @@
 
 - 状态前推：
   - `P7-A Desktop Session Detail And Transcript` 已完成。
-  - 当前下一子目标固定为 `P7-B Desktop Reply Submission And Relay Session Interaction Route`。
-  - 文档状态已前推到 `P7-B`，未前推到 `P8`。
+  - `P7-B Desktop Reply Submission And Relay Session Interaction Route` 已完成。
+  - `P7-C Reply Result Refresh And Session State Closure` 已完成。
+  - `P7-D Approval Continuation From UI Context` 已完成。
+  - 文档状态已前推到 `P8 V1.0 Release`。
 - 本轮交付：
-  - relay 新增 `GET /v1/sessions/{session_id}/detail`，供 desktop 通过 relay 读取 hosted session detail。
-  - relay detail 路由会先按 `session_id + remote_id` 从本地 session store 定位 session，再基于现有 session 的 `control.base_url` 或 registry 中的 `remote_id -> endpoint` 解析到正确的 `remote-agent`。
-  - desktop 新增 session 选中态与 detail 面板；点击 session list 中的某个 hosted session 后，会通过 relay 拉取 detail 并展示基本元数据。
-  - desktop detail 面板当前至少展示最近一轮输入与最近回复/最小 transcript。
-- transcript / recent reply 的真实来源：
-  - 最近一轮输入：`detail.session.last_turn.message`
-  - 最近一轮 turn 状态：`detail.session.last_turn.status`
-  - 最近回复内容：优先从 `detail.provider_observation.prompt_result` 或 `detail.session.last_turn.prompt_result` 中提取直接文本字段
-  - 无直接回复文本时：truthfully 回退为 `prompt_result` 或 `approval_request` 的原始 JSON 片段展示，不伪造完整聊天工作台
-  - hosted session 基本元数据：来自 relay 返回的 `session` 与 remote-agent detail 中的 `detail.session`
+  - session detail 与 approvals 列表建立了最小上下文关联：当前 session 命中的 approval 会在 approvals 列表中高亮，并可从 session detail 一键定位。
+  - 当 hosted session 进入 `approval_pending` 时，session detail 会明确显示 approval context、`request_id`、summary，并支持直接 `approve / reject`。
+  - 本地 approve / reject 后，desktop 会继续轮询当前 session detail，等待 hosted session 从 `approval_pending` 续跑到结果回流。
+  - reply 触发 approval 的整轮流程现在可以在同一本地控制面中走完，不依赖远端 `watch`。
+- truthful 展示与边界：
+  - approval 提示仍然基于真实字段：`detail.session.state`、`detail.session.pending_request_id`、`detail.session.last_turn.approval_request`、`detail.provider_observation.approval_request`。
+  - 后续结果回流仍然基于真实字段：`detail.session.last_turn.prompt_result` 与 `detail.provider_observation.prompt_result`。
+  - 本轮没有改变 approval 主语义，没有重写 `remote_id + request_id` 唯一定位模型。
 - 本轮故意不做：
-  - desktop reply 提交
-  - relay session interaction reply 路由
   - `attach`
-  - 通用聊天 UI、推理链可视化、token 流透传
+  - 通用聊天工作台、推理链可视化、token 流透传
   - `Codex`、`Claude`、`P8`、`P9`、`P10`
-  - checkpoint、replay、`remote-agent` 重启恢复等恢复能力前置
+  - recovery、checkpoint、replay、remote-agent 重启恢复等能力前置
+- 验证：
+  - 验证了 `UI reply -> approval 出现 -> 本地 approve -> session 继续 -> 结果回流` 的完整链路。
+  - 验证了 multi-remote 下 approval 继续按 `remote_id + request_id` 正确定位，不会串到错误 remote。
+  - 做了 desktop `main.js`、`preload.js` 与 renderer 文件的静态检查。
+  - 本轮未做真实 Electron 手点或完整端到端回路。
 - 回归约束：
-  - 保持现有 session list / approvals / multi-remote 视图不回退
-  - 保持 remote shell CLI `sessions / watch / reply / stop` 不回退
-  - 不改变 approval 的 `remote_id + request_id` 唯一定位语义
+  - 保持现有 multi-remote、approval、remote shell CLI 不回退。
+  - 不把 provider 原始执行现场恢复写成已支持。
