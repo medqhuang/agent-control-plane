@@ -1,0 +1,97 @@
+body {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.18), transparent 36%),
+    radial-gradient(circle at top right, rgba(16, 185, 129, 0.16), transparent 34%),
+    linear-gradient(180deg, #eaf2ff 0%, #f5f7fb 40%, #eef3f8 100%);
+}
+
+.showcase-stage {
+  width: 1480px;
+  margin: 0 auto;
+  padding: 36px;
+}
+
+.showcase-ribbon {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.showcase-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.88);
+  color: #f8fafc;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.showcase-kicker {
+  margin: 0 0 4px;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.showcase-title {
+  margin: 0;
+  color: #0f172a;
+  font-size: 30px;
+  line-height: 1.1;
+}
+
+.showcase-shell {
+  max-width: none;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 28px 80px rgba(15, 23, 42, 0.14),
+    0 4px 18px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(10px);
+}
+
+.showcase-shell .topbar {
+  padding-bottom: 8px;
+}
+
+.showcase-shell .status-panel,
+.showcase-shell .panel {
+  border-color: rgba(148, 163, 184, 0.22);
+  box-shadow: none;
+}
+
+.showcase-shell .status-panel {
+  background:
+    linear-gradient(180deg, rgba(239, 246, 255, 0.8), rgba(255, 255, 255, 0.92));
+}
+
+.showcase-shell .panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.92));
+}
+
+.showcase-shell .count-pill,
+.showcase-shell .meta-pill {
+  background: rgba(226, 232, 240, 0.9);
+}
+
+.showcase-shell .group-section {
+  background: rgba(248, 250, 252, 0.88);
+}
+
+.showcase-shell .approval-context-section {
+  background:
+    linear-gradient(180deg, rgba(219, 234, 254, 0.9), rgba(239, 246, 255, 0.95));
+}

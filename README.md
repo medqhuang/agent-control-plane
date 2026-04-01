@@ -13,7 +13,7 @@ instructions, and handle approvals without going back to each remote shell.
 - Current verified provider: `Kimi`
 
 `v1.0` has passed a live end-to-end release gate. Public release claims currently cover
-the verified `Kimi` path only. `Codex`and `Claude` are not part of the released surface yet.
+the verified `Kimi` path only. `Codex` and `Claude` are not part of the released surface yet.
 
 ## Features
 
@@ -23,6 +23,26 @@ the verified `Kimi` path only. `Codex`and `Claude` are not part of the released 
 - Local `approve / reject` flow for remote approvals
 - Multi-remote aggregation
 - Remote operator workflow through `remote-agent`
+
+## Screenshots
+
+### Overview
+
+![Agent Control Plane overview](docs/images/ui-overview.png)
+
+See remotes, hosted sessions, the selected session detail, and pending approvals in one local control surface.
+
+### Session Detail
+
+![Agent Control Plane session detail](docs/images/ui-session-detail.png)
+
+Open a hosted session, inspect the recent transcript, and send the next instruction without going back to the remote shell.
+
+### Approval Continuation
+
+![Agent Control Plane approval flow](docs/images/ui-approval-flow.png)
+
+When a reply pauses for approval, the decision stays in the same UI context and the result flows back into the current session detail.
 
 ## Requirements
 
@@ -129,3 +149,4 @@ not an installer-based desktop product.
 - [remote-agent/README.md](remote-agent/README.md)
 - [README_DEV.md](README_DEV.md)
 - [DEV.md](DEV.md)
+- `python scripts/generate_readme_screenshots.py`

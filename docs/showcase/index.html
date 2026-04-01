@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Agent Control Plane Showcase</title>
+    <link rel="stylesheet" href="/desktop/src/styles.css" />
+    <link rel="stylesheet" href="./showcase.css" />
+  </head>
+  <body>
+    <div id="capture-root" class="showcase-stage">
+      <div class="showcase-ribbon">
+        <span class="showcase-badge">Desktop UI</span>
+        <div>
+          <p id="showcase-kicker" class="showcase-kicker">Overview</p>
+          <h1 id="showcase-title" class="showcase-title">Agent Control Plane</h1>
+        </div>
+      </div>
+
+      <div class="app-shell showcase-shell">
+        <header class="topbar">
+          <div>
+            <p id="showcase-eyebrow" class="eyebrow">v1.0 Release Surface</p>
+            <h1>Agent Control Plane</h1>
+            <p id="showcase-subtitle" class="subtitle">
+              Local control surface for remote AI coding sessions.
+            </p>
+          </div>
+          <button id="refresh-button" class="refresh-button" type="button">
+            Refresh Snapshot
+          </button>
+        </header>
+
+        <section class="status-panel">
+          <div class="status-row">
+            <div>
+              <p class="label">Relay</p>
+              <p id="relay-endpoint" class="value">-</p>
+            </div>
+            <div>
+              <p class="label">Connection</p>
+              <p id="connection-status" class="value status-badge">Idle</p>
+            </div>
+            <div>
+              <p class="label">Last Updated</p>
+              <p id="last-updated" class="value">Never</p>
+            </div>
+          </div>
+          <p id="error-message" class="error-message" hidden></p>
+        </section>
+
+        <section id="remotes-panel" class="panel remotes-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Relay Registry</p>
+              <h2>Remotes</h2>
+            </div>
+            <p id="remote-count" class="count-pill">0</p>
+          </div>
+          <ul id="server-list" class="item-list server-grid"></ul>
+        </section>
+
+        <main class="content-grid">
+          <section id="sessions-panel" class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Grouped by Remote</p>
+                <h2>Sessions</h2>
+              </div>
+              <p id="session-count" class="count-pill">0</p>
+            </div>
+            <ul id="session-list" class="item-list"></ul>
+          </section>
+
+          <div id="interaction-column" class="side-stack">
+            <section id="detail-panel" class="panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Hosted Session</p>
+                  <h2>Session Detail</h2>
+                </div>
+              </div>
+              <div id="session-detail" class="detail-panel-body"></div>
+            </section>
+
+            <section id="approvals-panel" class="panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Grouped by Remote</p>
+                  <h2>Approvals</h2>
+                </div>
+                <p id="approval-count" class="count-pill">0</p>
+              </div>
+              <ul id="approval-list" class="item-list"></ul>
+            </section>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script type="module" src="./showcase.js"></script>
+  </body>
+</html>
