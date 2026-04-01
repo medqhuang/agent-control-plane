@@ -96,6 +96,31 @@
 - 当前不因为本地已有 Claude Code 源码而改变后续 `P7 -> P8 -> P9 -> P10 -> V2 Claude` 的阶段顺序
 - 当前不将 Claude 的内部实现细节直接抽象成项目的顶层架构
 
+`P7 Local Session Interaction UI` 对 Claude Code 源码的具体参考落点：
+
+- `references/claude-code-haha-main/src/QueryEngine.ts`
+  - 参考 turn 级消息持有、最近消息组织与 transcript 视图所需的最小消息模型
+  - 用于指导本项目的 session detail / recent reply 数据组织
+- `references/claude-code-haha-main/src/bridge/bridgeMessaging.ts`
+  - 参考 bridge ingress routing、control request / response 分流与消息去重
+  - 用于指导 `relay <-> remote-agent` 的 session detail / reply 路由
+- `references/claude-code-haha-main/src/bridge/inboundMessages.ts`
+  - 参考入站消息规范化与 UI 输入到内部消息结构的转换
+  - 用于指导本地 UI `reply` 输入如何落到稳定请求格式
+- `references/claude-code-haha-main/src/bridge/sessionRunner.ts`
+  - 参考 activity 提取、最近输出摘要与 session 运行时观察视图
+  - 用于指导 desktop 中“最近回复 / 最近活动 / 当前状态”的最小展示
+- `references/claude-code-haha-main/src/bridge/codeSessionApi.ts`
+  - 参考薄 API 包装层的分层方式
+  - 用于指导 remote-agent session detail / reply 接口的薄封装写法
+
+`P7` 参考 Claude Code 源码时的禁止项：
+
+- 不照搬 Claude 的整套 bridge / cloud session / trusted device 架构
+- 不引入与当前项目无关的认证、云会话或多端信任模型
+- 不因为 Claude 的内部对象模型而改写现有 `desktop -> relay -> remote-agent -> provider` 主链路
+- 不把 `P7` 目标扩大成通用聊天工作台或完整 transcript 平台
+
 ## 当前稳定基线
 
 进入 `P4` 之前，以下能力与规则视为冻结基线。
@@ -928,6 +953,76 @@ Kimi provider binary 发现方式固定为：
 
 - `P7-A` 已完成：`Desktop Session Detail And Transcript`
 - `P7-B` 当前：`Desktop Reply Submission And Relay Session Interaction Route`
+- `P7-C` 待做：`Reply Result Refresh And Session State Closure`
+- `P7-D` 待做：`Approval Continuation From UI Context`
+
+### 子阶段说明
+
+#### P7-B Desktop Reply Submission And Relay Session Interaction Route
+
+目标：
+
+- 让本地 `desktop` 可以直接对某个 hosted session 提交 `reply`
+- 让 `relay` 将该 `reply` 正确路由到目标 `remote-agent` 与目标 session
+
+范围：
+
+- desktop reply 输入框、提交动作与提交中状态
+- relay 补齐 session detail / reply 路由
+- multi-remote 下携带正确的 `remote_id + session_id`
+- 保持远端 shell 中现有 `remote-agent reply` 能力不回退
+
+完成标准：
+
+- 本地 UI 可以对指定 session 提交 `reply`
+- reply 不会串到错误 remote 或错误 session
+- 远端 hosted session 会因该 reply 继续执行
+- reply 失败时，本地 UI 能明确显示错误
+
+#### P7-C Reply Result Refresh And Session State Closure
+
+目标：
+
+- 让本地 UI 在提交 `reply` 后能看到新的结果，而不是只负责发送
+- 让 session detail 视图形成完整的一轮交互闭环
+
+范围：
+
+- reply 后刷新 session detail / transcript
+- 至少显示最近一轮 assistant reply 或等价的最小结果摘要
+- 显示 reply 过程中的发送中 / 运行中 / 完成状态
+- 避免重复提交同一轮 reply
+
+完成标准：
+
+- 连续两到三轮 reply 后，本地 UI 都能看到新结果
+- 本地 UI 的 session state 会随 reply 过程正确变化
+- 不需要依赖远端 `watch` 才能确认 reply 是否成功
+
+#### P7-D Approval Continuation From UI Context
+
+目标：
+
+- 如果本地 UI 发出的 reply 触发 approval，本地用户仍能在同一控制面里把整轮流程走完
+
+范围：
+
+- session detail 与 approval 列表之间的上下文关联
+- session 进入 `approval_pending` 时的本地 UI 提示
+- approve / reject 后的 session 继续执行与结果回流
+
+完成标准：
+
+- 用本地 UI 发出的 reply 可以触发 approval
+- approval 在本地可见且可处理
+- approve / reject 后，该 session 能继续执行
+- 最终结果会回到本地 session detail 视图
+
+### 建议执行顺序
+
+1. `P7-B Desktop Reply Submission And Relay Session Interaction Route`
+2. `P7-C Reply Result Refresh And Session State Closure`
+3. `P7-D Approval Continuation From UI Context`
 
 ### 范围
 

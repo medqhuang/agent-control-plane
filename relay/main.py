@@ -170,7 +170,6 @@ def get_hosted_session_detail(
         "detail": detail_result["result"],
         "proxy": {
             "remote_id": normalized_remote_id,
-            "base_url": detail_result["base_url"],
             "http_status": detail_result["http_status"],
         },
         "fetched_at": _utc_now(),
